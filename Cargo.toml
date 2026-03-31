@@ -1,0 +1,47 @@
+[package]
+name = "dt-cli-tools"
+version = "0.1.0"
+edition = "2024"
+description = "CLI tools for viewing, filtering, and comparing tabular data files"
+license = "MIT"
+
+[lib]
+name = "dtcore"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dtcat"
+path = "src/bin/dtcat.rs"
+
+[[bin]]
+name = "dtfilter"
+path = "src/bin/dtfilter.rs"
+
+[[bin]]
+name = "dtdiff"
+path = "src/bin/dtdiff.rs"
+
+[dependencies]
+polars = { version = "0.46", default-features = false, features = [
+    "dtype-datetime",
+    "csv",
+    "parquet",
+    "ipc",
+    "json",
+] }
+calamine = "0.26"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = "z"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
