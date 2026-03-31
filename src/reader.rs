@@ -3,7 +3,7 @@ use polars::prelude::*;
 use std::path::Path;
 
 use crate::format::Format;
-use crate::metadata::{FileInfo, SheetInfo};
+use crate::metadata::FileInfo;
 use crate::readers;
 
 /// Options that control how a file is read.
