@@ -142,22 +142,20 @@ fn build_filter_mask(df: &DataFrame, expr: &FilterExpr) -> Result<BooleanChunked
 
     match &expr.op {
         FilterOp::Eq => {
-            if is_numeric_dtype(dtype) {
-                if let Ok(n) = expr.value.parse::<f64>() {
+            if is_numeric_dtype(dtype)
+                && let Ok(n) = expr.value.parse::<f64>() {
                     let s = series.cast(&DataType::Float64)?;
                     return Ok(s.f64()?.equal(n));
                 }
-            }
             let s = series.cast(&DataType::String)?;
             Ok(s.str()?.equal(expr.value.as_str()))
         }
         FilterOp::NotEq => {
-            if is_numeric_dtype(dtype) {
-                if let Ok(n) = expr.value.parse::<f64>() {
+            if is_numeric_dtype(dtype)
+                && let Ok(n) = expr.value.parse::<f64>() {
                     let s = series.cast(&DataType::Float64)?;
                     return Ok(s.f64()?.not_equal(n));
                 }
-            }
             let s = series.cast(&DataType::String)?;
             Ok(s.str()?.not_equal(expr.value.as_str()))
         }

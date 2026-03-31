@@ -130,7 +130,7 @@ pub fn detect_csv_delimiter(path: &Path) -> Result<u8> {
     let n = file.read(&mut buf)?;
     buf.truncate(n);
 
-    let candidates: &[u8] = &[b',', b'\t', b';'];
+    let candidates: &[u8] = b",\t;";
     // min count per delimiter across lines; start at usize::MAX so we can take min
     let mut min_counts = [usize::MAX; 3];
     let mut line_count = 0usize;
