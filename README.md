@@ -1,16 +1,48 @@
-# dt-cli-tools
+<div align="center">
 
-CLI tools for viewing, filtering, and comparing tabular data files. Supports CSV, TSV, Parquet, Arrow/Feather, JSON, NDJSON, and Excel.
+<h1>dt-cli-tools</h1>
+<h3>View, filter, and diff tabular data files from the command line</h3>
 
-Three read-only tools: **dtcat**, **dtfilter**, **dtdiff**.
+[![Vibecoded](https://img.shields.io/badge/vibecoded-%E2%9C%A8-blueviolet)](https://claude.ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Install
+<table>
+<tr>
+<td align="center" width="33%"><strong>dtcat</strong> — view</td>
+<td align="center" width="33%"><strong>dtfilter</strong> — query</td>
+<td align="center" width="33%"><strong>dtdiff</strong> — compare</td>
+</tr>
+<tr>
+<td><img src="demo/dtcat.gif" alt="dtcat demo" /></td>
+<td><img src="demo/dtfilter.gif" alt="dtfilter demo" /></td>
+<td><img src="demo/dtdiff.gif" alt="dtdiff demo" /></td>
+</tr>
+</table>
+
+</div>
+
+***
+
+[**dtcat**](#dtcat--view-data-files) · [**dtfilter**](#dtfilter--query-and-filter) · [**dtdiff**](#dtdiff--compare-two-files) · [**Install**](#installation) · [**Claude Code**](#claude-code-integration)
+
+***
+
+Three read-only binaries, no runtime dependencies. Supports CSV, TSV, Parquet, Arrow/Feather, JSON, NDJSON, and Excel.
 
 ```bash
-cargo install --path .
+# View a file
+dtcat data.parquet
+
+# Filter rows
+dtfilter data.csv --filter "Amount>1000" --sort "Amount:desc"
+
+# Diff two files
+dtdiff old.csv new.csv --key ID
 ```
 
-## Formats
+> **Supersedes [xl-cli-tools](https://github.com/LouLouLibs/xl-cli-tools)** — same filtering and diff capabilities, now for all tabular formats.
+
+## Supported Formats
 
 | Format | Extensions | Detection |
 |--------|-----------|-----------|
@@ -22,77 +54,204 @@ cargo install --path .
 | NDJSON | `.ndjson`, `.jsonl` | `{` prefix |
 | Excel | `.xlsx`, `.xls`, `.xlsb`, `.ods` | ZIP/OLE magic |
 
-Format detection: `--format` flag > magic bytes > file extension.
+Format detection: `--format` flag > magic bytes > file extension. CSV delimiter auto-detected (comma, tab, semicolon).
 
-CSV delimiter auto-detected (comma, tab, semicolon).
+## Installation
 
----
+### Pre-built binaries (macOS)
 
-## dtcat
-
-View and inspect files. Outputs markdown tables by default.
+Download from [Releases](https://github.com/LouLouLibs/dt-cli-tools/releases):
 
 ```bash
-dtcat data.parquet                  # schema + data (≤50 rows all, >50 head/tail 25)
-dtcat data.csv --schema             # column names and types
-dtcat data.csv --describe           # summary statistics
-dtcat report.xlsx --info            # file metadata (size, format, sheets)
-dtcat report.xlsx --sheet Revenue   # specific Excel sheet
-dtcat data.csv --head 10            # first 10 rows
-dtcat data.csv --tail 5             # last 5 rows
-dtcat data.parquet --csv            # output as CSV for piping
-dtcat data.txt --format csv         # override format detection
-dtcat data.csv --skip 2             # skip metadata rows above header
+# Apple Silicon (macOS)
+for tool in dtcat dtfilter dtdiff; do
+  curl -L "https://github.com/LouLouLibs/dt-cli-tools/releases/latest/download/${tool}-aarch64-apple-darwin" \
+    -o ~/.local/bin/$tool
+done
+chmod +x ~/.local/bin/dt{cat,filter,diff}
 ```
 
-Modes `--schema`, `--describe`, and data (default) are mutually exclusive.
-
-## dtfilter
-
-Filter, sort, and select.
+### From source
 
 ```bash
-dtfilter data.csv --filter State=CA                     # equality
-dtfilter data.csv --filter Amount>1000                   # numeric comparison
-dtfilter data.csv --filter State=CA --filter Amount>1000 # AND logic
-dtfilter data.csv --filter Name~john                     # contains (case-insensitive)
-dtfilter data.csv --filter Status!=Draft                 # not equals
-dtfilter data.csv --columns State,City,Amount            # select columns
-dtfilter data.csv --sort Amount:desc                     # sort descending
-dtfilter data.csv --sort Name                            # sort ascending (default)
-dtfilter data.csv --filter Active=true --limit 10        # cap output rows
-dtfilter data.csv --head 100 --filter State=CA           # window before filter
-dtfilter data.parquet --filter value>0 --csv             # CSV output
+cargo install --path .
 ```
 
-Filter operators: `=` `!=` `>` `<` `>=` `<=` `~` (contains) `!~` (not contains).
+Requires Rust 1.85+.
 
-`--head`/`--tail` apply before filtering. `--limit` applies after. `--head` and `--tail` are mutually exclusive.
-
-## dtdiff
-
-Compare two files of the same format. Exit code 0 = identical, 1 = differences, 2 = error.
+## dtcat — View Data Files
 
 ```bash
-dtdiff old.csv new.csv                          # positional comparison
-dtdiff old.csv new.csv --key ID                 # key-based (added/removed/modified)
-dtdiff old.csv new.csv --key Date,Ticker        # composite key
-dtdiff old.csv new.csv --key ID --tolerance 0.01  # float tolerance
-dtdiff old.csv new.csv --key ID --json          # JSON output
-dtdiff old.csv new.csv --key ID --csv           # CSV output
-dtdiff old.csv new.csv --no-color               # plain text
-dtdiff report.xlsx other.xlsx --sheet Revenue   # Excel sheets
+# Overview: schema + data (<=50 rows all, >50 head/tail 25)
+dtcat data.parquet
+
+# Column names and types only
+dtcat data.csv --schema
+
+# Summary statistics (count, mean, std, min, max, median)
+dtcat data.csv --describe
+
+# File metadata (size, format, sheets)
+dtcat report.xlsx --info
+
+# Pick a sheet in a multi-sheet workbook
+dtcat report.xlsx --sheet Revenue
+
+# First 10 rows / last 5 rows
+dtcat data.csv --head 10
+dtcat data.csv --tail 5
+
+# CSV output for piping
+dtcat data.parquet --csv
+
+# Override format detection
+dtcat data.txt --format csv
+
+# Skip metadata rows above header
+dtcat data.csv --skip 2
 ```
 
-Both files must be the same format (CSV/TSV are treated as compatible).
+### Example output
 
-**Positional mode** (no `--key`): reports added/removed rows based on full-row equality.
+```
+# File: sales.parquet (245 KB)
+# Format: Parquet
 
-**Key-based mode** (`--key`): matches by key columns, reports added/removed/modified with cell-level changes.
+## Data (1240 rows x 4 cols)
 
----
+| Column  | Type   |
+|---------|--------|
+| date    | Date   |
+| region  | String |
+| amount  | Float  |
+| units   | Int    |
 
-## Exit Codes
+| date       | region | amount  | units |
+|------------|--------|---------|-------|
+| 2024-01-01 | East   | 1234.56 | 100   |
+| 2024-01-02 | West   | 987.00  | 75    |
+... (1190 rows omitted) ...
+| 2024-12-30 | East   | 1100.00 | 92    |
+| 2024-12-31 | West   | 1250.75 | 110   |
+```
+
+### Adaptive defaults
+
+- **Single sheet/file, <=50 rows:** shows all data
+- **Single sheet/file, >50 rows:** first 25 + last 25 rows
+- **Multiple sheets:** lists schemas, pick one with `--sheet`
+
+Modes `--schema`, `--describe`, `--info`, and data (default) are mutually exclusive.
+
+## dtfilter — Query and Filter
+
+```bash
+# Filter rows by value
+dtfilter data.csv --filter State=CA
+
+# Numeric comparisons
+dtfilter data.csv --filter Amount>1000
+
+# Multiple filters (AND)
+dtfilter data.csv --filter State=CA --filter Amount>1000
+
+# Contains filter (case-insensitive)
+dtfilter data.csv --filter Name~john
+
+# Select columns
+dtfilter data.csv --columns State,City,Amount
+
+# Sort results
+dtfilter data.csv --sort Amount:desc
+
+# Limit output
+dtfilter data.csv --sort Amount:desc --limit 10
+
+# Window before filter
+dtfilter data.csv --head 100 --filter State=CA
+
+# CSV output for piping
+dtfilter data.parquet --filter value>0 --csv
+```
+
+### Filter operators
+
+| Operator | Meaning | Example |
+|----------|---------|---------|
+| `=` | Equals | `State=CA` |
+| `!=` | Not equals | `Status!=Draft` |
+| `>` | Greater than | `Amount>1000` |
+| `<` | Less than | `Year<2024` |
+| `>=` | Greater or equal | `Score>=90` |
+| `<=` | Less or equal | `Price<=50` |
+| `~` | Contains (case-insensitive) | `Name~john` |
+| `!~` | Not contains | `Name!~test` |
+
+`--head`/`--tail` apply before filtering. `--limit` applies after. Row count is printed to stderr.
+
+## dtdiff — Compare Two Files
+
+```bash
+# Positional diff (whole-row comparison)
+dtdiff old.csv new.csv
+
+# Key-based diff (match rows by ID, compare cell by cell)
+dtdiff old.csv new.csv --key ID
+
+# Composite key
+dtdiff old.csv new.csv --key Date,Ticker
+
+# Float tolerance (differences <= 0.01 treated as equal)
+dtdiff old.csv new.csv --key ID --tolerance 0.01
+
+# Only compare specific columns
+dtdiff old.csv new.csv --key ID --columns Name,Salary
+
+# Excel sheets
+dtdiff report.xlsx other.xlsx --sheet Revenue
+
+# Output formats
+dtdiff old.csv new.csv --key ID --json
+dtdiff old.csv new.csv --key ID --csv
+dtdiff old.csv new.csv --no-color
+```
+
+### Example output
+
+```
+--- old.csv
++++ new.csv
+
+Added: 1 | Removed: 1 | Modified: 2
+
+- ID: "3"  Name: "Charlie"  Department: "Engineering"  Salary: "88000"
++ ID: "5"  Name: "Eve"  Department: "Marketing"  Salary: "70000"
+~ ID: "1"
+    Salary: "95000" → "98000"
+~ ID: "2"
+    Department: "Marketing" → "Design"
+    Salary: "72000" → "75000"
+```
+
+### Diff modes
+
+**Positional (no `--key`):** Every column defines row identity. Reports added/removed rows only.
+
+**Key-based (`--key`):** Match rows by key columns, compare remaining columns cell by cell. Reports added, removed, and modified rows with per-cell changes. Supports composite keys, duplicate key detection, and float tolerance.
+
+### Exit codes (diff convention)
+
+| Code | Meaning |
+|------|---------|
+| 0 | No differences |
+| 1 | Differences found |
+| 2 | Error |
+
+## Claude Code integration
+
+Claude Code skills are available in [claude-skills](https://github.com/LouLouLibs/claude-skills). Claude can view data files, analyze schemas, filter rows, and compare files in conversations.
+
+## Exit codes
 
 | Tool | 0 | 1 | 2 |
 |------|---|---|---|
@@ -100,19 +259,6 @@ Both files must be the same format (CSV/TSV are treated as compatible).
 | dtfilter | success | runtime error | invalid arguments |
 | dtdiff | no differences | differences found | error |
 
-## Architecture
+## License
 
-Library crate `dtcore` with three thin binaries. ~60% ported from [xl-cli-tools](https://github.com/LouLouLibs/xl-cli-tools).
-
-```
-src/
-  format.rs       # format detection (magic bytes + extension)
-  reader.rs       # dispatch to format-specific readers
-  readers/        # CSV, Parquet, Arrow, JSON, Excel
-  formatter.rs    # DataFrame → markdown/CSV output
-  filter.rs       # filter expressions, sort, pipeline
-  diff.rs         # positional and key-based comparison
-  metadata.rs     # FileInfo, SheetInfo, display helpers
-```
-
-Built on [Polars](https://pola.rs/) for DataFrames, [calamine](https://github.com/tafia/calamine) for Excel, [clap](https://clap.rs/) for CLI.
+MIT
