@@ -4,7 +4,8 @@ use std::process;
 use anyhow::{bail, Result};
 use clap::Parser;
 
-use dtcore::format::{detect_format, Format};
+use dtcore::format::{detect_format, parse_format_str, Format};
+use dtcore::writer::write_file;
 use dtcore::formatter::{
     format_csv, format_data_table, format_describe, format_empty_sheet, format_head_tail,
     format_header, format_schema, format_sheet_listing,
@@ -70,6 +71,14 @@ struct Args {
     /// Show file metadata only
     #[arg(long)]
     info: bool,
+
+    /// Convert to format (csv, tsv, parquet, arrow, json, ndjson)
+    #[arg(long, value_name = "FORMAT")]
+    convert: Option<String>,
+
+    /// Output file path (required for binary formats with --convert)
+    #[arg(short = 'o', value_name = "PATH")]
+    output: Option<String>,
 }
 
 fn validate_args(args: &Args) -> Result<()> {
@@ -94,6 +103,14 @@ fn validate_args(args: &Args) -> Result<()> {
         }
         if args.all {
             bail!("--sample and --all are mutually exclusive");
+        }
+    }
+    if args.convert.is_some() {
+        if args.schema || args.describe || args.info || args.csv
+            || args.head.is_some() || args.tail.is_some()
+            || args.all || args.sample.is_some()
+        {
+            bail!("--convert is mutually exclusive with display flags");
         }
     }
     Ok(())
@@ -236,6 +253,15 @@ fn run(args: Args) -> Result<()> {
     } else {
         df
     };
+
+    // --convert: write to a different format and exit
+    if let Some(ref convert_str) = args.convert {
+        let target_fmt = parse_format_str(convert_str)?;
+        let out_path = args.output.as_deref().map(std::path::Path::new);
+        let mut df = df;
+        write_file(&mut df, out_path, target_fmt)?;
+        return Ok(());
+    }
 
     // Handle empty DataFrame
     if df.is_empty() {

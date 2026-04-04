@@ -276,3 +276,75 @@ fn excel_info() {
         .stdout(predicate::str::contains("Excel"))
         .stdout(predicate::str::contains("Sheet1"));
 }
+
+// ─── Convert ───
+
+#[test]
+fn convert_csv_to_parquet() {
+    let out = NamedTempFile::with_suffix(".parquet").unwrap();
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("parquet")
+        .arg("-o").arg(out.path())
+        .assert().success();
+    dtcat().arg(out.path()).arg("--csv")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Charlie"));
+}
+
+#[test]
+fn convert_parquet_to_csv_file() {
+    let out = NamedTempFile::with_suffix(".csv").unwrap();
+    dtcat().arg("tests/fixtures/data.parquet")
+        .arg("--convert").arg("csv")
+        .arg("-o").arg(out.path())
+        .assert().success();
+    dtcat().arg(out.path())
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
+
+#[test]
+fn convert_csv_to_json_stdout() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("json")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
+
+#[test]
+fn convert_csv_to_ndjson_stdout() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("ndjson")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
+
+#[test]
+fn convert_parquet_no_output_errors() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("parquet")
+        .assert().failure();
+}
+
+#[test]
+fn convert_arrow_no_output_errors() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("arrow")
+        .assert().failure();
+}
+
+#[test]
+fn convert_conflicts_with_schema() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--convert").arg("csv").arg("--schema")
+        .assert().code(2);
+}
+
+#[test]
+fn convert_with_skip() {
+    let f = csv_file("meta\nname,value\nAlice,100\n");
+    dtcat().arg(f.path()).arg("--skip").arg("1").arg("--convert").arg("csv")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
