@@ -105,13 +105,12 @@ fn validate_args(args: &Args) -> Result<()> {
             bail!("--sample and --all are mutually exclusive");
         }
     }
-    if args.convert.is_some() {
-        if args.schema || args.describe || args.info || args.csv
+    if args.convert.is_some()
+        && (args.schema || args.describe || args.info || args.csv
             || args.head.is_some() || args.tail.is_some()
-            || args.all || args.sample.is_some()
-        {
-            bail!("--convert is mutually exclusive with display flags");
-        }
+            || args.all || args.sample.is_some())
+    {
+        bail!("--convert is mutually exclusive with display flags");
     }
     Ok(())
 }
