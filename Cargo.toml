@@ -32,6 +32,7 @@ polars = { version = "0.46", default-features = false, features = [
     "parquet",
     "ipc",
     "json",
+    "random",
 ] }
 calamine = "0.26"
 clap = { version = "4", features = ["derive"] }

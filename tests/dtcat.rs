@@ -145,6 +145,66 @@ fn all_flag_shows_every_row() {
         .stdout(predicate::str::contains("| 30 "));
 }
 
+// ─── Sample ───
+
+#[test]
+fn sample_returns_n_rows() {
+    let out = dtcat().arg("demo/sales.csv").arg("--sample").arg("5").arg("--csv")
+        .assert().success();
+    let stdout = String::from_utf8(out.get_output().stdout.clone()).unwrap();
+    let lines: Vec<&str> = stdout.trim().lines().collect();
+    assert_eq!(lines.len(), 6, "expected header + 5 rows, got {}", lines.len());
+}
+
+#[test]
+fn sample_ge_total_returns_all() {
+    let f = csv_file("x\n1\n2\n3\n");
+    dtcat().arg(f.path()).arg("--sample").arg("100").arg("--csv")
+        .assert().success();
+}
+
+#[test]
+fn sample_conflicts_with_head() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--head").arg("1")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_tail() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--tail").arg("1")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_all() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--all")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_schema() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--schema")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_describe() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--describe")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_info() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--info")
+        .assert().code(2);
+}
+
 // ─── Parquet ───
 
 #[test]
