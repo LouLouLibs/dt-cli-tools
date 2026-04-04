@@ -6,18 +6,7 @@
 [![Vibecoded](https://img.shields.io/badge/vibecoded-%E2%9C%A8-blueviolet)](https://claude.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<table>
-<tr>
-<td align="center" width="33%"><strong>dtcat</strong> — view</td>
-<td align="center" width="33%"><strong>dtfilter</strong> — query</td>
-<td align="center" width="33%"><strong>dtdiff</strong> — compare</td>
-</tr>
-<tr>
-<td><img src="demo/dtcat.gif" alt="dtcat demo" /></td>
-<td><img src="demo/dtfilter.gif" alt="dtfilter demo" /></td>
-<td><img src="demo/dtdiff.gif" alt="dtdiff demo" /></td>
-</tr>
-</table>
+<img src="demo/hero.gif" alt="dt-cli-tools demo" width="80%" />
 
 </div>
 
@@ -80,6 +69,8 @@ cargo install --path .
 Requires Rust 1.85+.
 
 ## dtcat — View Data Files
+
+<img src="demo/dtcat.gif" alt="dtcat demo" width="80%" />
 
 ```bash
 # Overview: schema + data (<=50 rows all, >50 head/tail 25)
@@ -145,6 +136,8 @@ Modes `--schema`, `--describe`, `--info`, and data (default) are mutually exclus
 
 ## dtfilter — Query and Filter
 
+<img src="demo/dtfilter.gif" alt="dtfilter demo" width="80%" />
+
 ```bash
 # Filter rows by value
 dtfilter data.csv --filter State=CA
@@ -190,6 +183,8 @@ dtfilter data.parquet --filter value>0 --csv
 `--head`/`--tail` apply before filtering. `--limit` applies after. Row count is printed to stderr.
 
 ## dtdiff — Compare Two Files
+
+<img src="demo/dtdiff.gif" alt="dtdiff demo" width="80%" />
 
 ```bash
 # Positional diff (whole-row comparison)
