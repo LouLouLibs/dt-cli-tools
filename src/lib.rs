@@ -5,3 +5,5 @@ pub mod formatter;
 pub mod metadata;
 pub mod reader;
 pub mod readers;
+pub mod writer;
+pub mod writers;
