@@ -1,0 +1,19 @@
+Date,Region,Product,Revenue,Units
+2024-01-05,East,Widget A,12500,250
+2024-01-12,West,Widget B,8700,145
+2024-01-19,East,Widget C,15300,310
+2024-02-02,West,Widget A,9200,184
+2024-02-14,East,Widget B,11800,236
+2024-02-28,West,Widget C,7600,127
+2024-03-05,East,Widget A,14100,282
+2024-03-15,West,Widget B,10500,175
+2024-03-22,East,Widget C,16800,340
+2024-04-01,West,Widget A,8900,178
+2024-04-10,East,Widget B,13200,264
+2024-04-18,West,Widget C,9800,163
+2024-05-03,East,Widget A,11400,228
+2024-05-14,West,Widget B,7300,122
+2024-05-25,East,Widget C,14700,294
+2024-06-01,West,Widget A,10100,202
+2024-06-12,East,Widget B,12600,252
+2024-06-20,West,Widget C,8400,140
