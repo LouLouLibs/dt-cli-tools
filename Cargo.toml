@@ -1,6 +1,6 @@
 [package]
 name = "dt-cli-tools"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "CLI tools for viewing, filtering, and comparing tabular data files"
 license = "MIT"
@@ -32,6 +32,7 @@ polars = { version = "0.46", default-features = false, features = [
     "parquet",
     "ipc",
     "json",
+    "random",
 ] }
 calamine = "0.26"
 clap = { version = "4", features = ["derive"] }

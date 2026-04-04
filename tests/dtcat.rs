@@ -145,6 +145,66 @@ fn all_flag_shows_every_row() {
         .stdout(predicate::str::contains("| 30 "));
 }
 
+// ─── Sample ───
+
+#[test]
+fn sample_returns_n_rows() {
+    let out = dtcat().arg("demo/sales.csv").arg("--sample").arg("5").arg("--csv")
+        .assert().success();
+    let stdout = String::from_utf8(out.get_output().stdout.clone()).unwrap();
+    let lines: Vec<&str> = stdout.trim().lines().collect();
+    assert_eq!(lines.len(), 6, "expected header + 5 rows, got {}", lines.len());
+}
+
+#[test]
+fn sample_ge_total_returns_all() {
+    let f = csv_file("x\n1\n2\n3\n");
+    dtcat().arg(f.path()).arg("--sample").arg("100").arg("--csv")
+        .assert().success();
+}
+
+#[test]
+fn sample_conflicts_with_head() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--head").arg("1")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_tail() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--tail").arg("1")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_all() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--all")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_schema() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--schema")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_describe() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--describe")
+        .assert().code(2);
+}
+
+#[test]
+fn sample_conflicts_with_info() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--info")
+        .assert().code(2);
+}
+
 // ─── Parquet ───
 
 #[test]
@@ -215,4 +275,76 @@ fn excel_info() {
     dtcat().arg("demo/sales.xlsx").arg("--info").assert().success()
         .stdout(predicate::str::contains("Excel"))
         .stdout(predicate::str::contains("Sheet1"));
+}
+
+// ─── Convert ───
+
+#[test]
+fn convert_csv_to_parquet() {
+    let out = NamedTempFile::with_suffix(".parquet").unwrap();
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("parquet")
+        .arg("-o").arg(out.path())
+        .assert().success();
+    dtcat().arg(out.path()).arg("--csv")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Charlie"));
+}
+
+#[test]
+fn convert_parquet_to_csv_file() {
+    let out = NamedTempFile::with_suffix(".csv").unwrap();
+    dtcat().arg("tests/fixtures/data.parquet")
+        .arg("--convert").arg("csv")
+        .arg("-o").arg(out.path())
+        .assert().success();
+    dtcat().arg(out.path())
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
+
+#[test]
+fn convert_csv_to_json_stdout() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("json")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
+
+#[test]
+fn convert_csv_to_ndjson_stdout() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("ndjson")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
+
+#[test]
+fn convert_parquet_no_output_errors() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("parquet")
+        .assert().failure();
+}
+
+#[test]
+fn convert_arrow_no_output_errors() {
+    dtcat().arg("tests/fixtures/data.csv")
+        .arg("--convert").arg("arrow")
+        .assert().failure();
+}
+
+#[test]
+fn convert_conflicts_with_schema() {
+    let f = csv_file("x\n1\n");
+    dtcat().arg(f.path()).arg("--convert").arg("csv").arg("--schema")
+        .assert().code(2);
+}
+
+#[test]
+fn convert_with_skip() {
+    let f = csv_file("meta\nname,value\nAlice,100\n");
+    dtcat().arg(f.path()).arg("--skip").arg("1").arg("--convert").arg("csv")
+        .assert().success()
+        .stdout(predicate::str::contains("Alice"));
 }
