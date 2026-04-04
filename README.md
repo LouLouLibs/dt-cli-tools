@@ -102,6 +102,15 @@ dtcat data.csv --tail 5
 # CSV output for piping
 dtcat data.parquet --csv
 
+# Random sample of rows
+dtcat huge.parquet --sample 20
+dtcat huge.parquet --sample 50 --csv
+
+# Convert between formats
+dtcat data.csv --convert parquet -o data.parquet
+dtcat report.xlsx --sheet Revenue --convert csv -o revenue.csv
+dtcat data.parquet --convert ndjson              # text formats go to stdout
+
 # Override format detection
 dtcat data.txt --format csv
 
@@ -140,6 +149,10 @@ dtcat data.csv --skip 2
 - **Multiple sheets:** lists schemas, pick one with `--sheet`
 
 Modes `--schema`, `--describe`, `--info`, and data (default) are mutually exclusive.
+
+`--sample N` randomly selects N rows; mutually exclusive with `--head`/`--tail`/`--all`.
+
+`--convert FORMAT` writes to a different format. Use `-o PATH` for output file (required for binary formats Parquet/Arrow; optional for text formats which default to stdout). Supported targets: csv, tsv, parquet, arrow, json, ndjson.
 
 ## dtfilter — Query and Filter
 
