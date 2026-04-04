@@ -58,6 +58,13 @@ for tool in dtcat dtfilter dtdiff; do
     -o ~/.local/bin/$tool
 done
 chmod +x ~/.local/bin/dt{cat,filter,diff}
+
+# Intel Mac (macOS)
+for tool in dtcat dtfilter dtdiff; do
+  curl -L "https://github.com/LouLouLibs/dt-cli-tools/releases/latest/download/${tool}-x86_64-apple-darwin" \
+    -o ~/.local/bin/$tool
+done
+chmod +x ~/.local/bin/dt{cat,filter,diff}
 ```
 
 ### From source

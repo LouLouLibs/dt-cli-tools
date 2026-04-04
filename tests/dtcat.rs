@@ -14,6 +14,8 @@ fn csv_file(content: &str) -> NamedTempFile {
     f
 }
 
+// ─── Basic viewing ───
+
 #[test]
 fn shows_csv_data() {
     let f = csv_file("name,value\nAlice,100\nBob,200\n");
@@ -21,6 +23,20 @@ fn shows_csv_data() {
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("Bob"));
 }
+
+#[test]
+fn header_only_csv() {
+    let f = csv_file("name,value\n");
+    dtcat().arg(f.path()).assert().success()
+        .stdout(predicate::str::contains("no data rows"));
+}
+
+#[test]
+fn nonexistent_file_exits_1() {
+    dtcat().arg("/tmp/does_not_exist_12345.csv").assert().failure();
+}
+
+// ─── Modes ───
 
 #[test]
 fn schema_flag() {
@@ -31,22 +47,60 @@ fn schema_flag() {
 }
 
 #[test]
+fn describe_flag() {
+    let f = csv_file("name,value\nAlice,100\nBob,200\n");
+    dtcat().arg(f.path()).arg("--describe").assert().success()
+        .stdout(predicate::str::contains("count"))
+        .stdout(predicate::str::contains("mean"));
+}
+
+#[test]
+fn info_flag() {
+    let f = csv_file("name,value\nAlice,100\n");
+    dtcat().arg(f.path()).arg("--info").assert().success()
+        .stdout(predicate::str::contains("File:"));
+}
+
+// ─── Row windowing ───
+
+#[test]
+fn head_flag() {
+    let f = csv_file("x\n1\n2\n3\n4\n5\n");
+    dtcat().arg(f.path()).arg("--head").arg("2").assert().success()
+        .stdout(predicate::str::contains("1"))
+        .stdout(predicate::str::contains("2"))
+        .stdout(predicate::str::contains("3").not());
+}
+
+#[test]
+fn tail_flag() {
+    let f = csv_file("x\n1\n2\n3\n4\n5\n");
+    dtcat().arg(f.path()).arg("--tail").arg("2").assert().success()
+        .stdout(predicate::str::contains("4"))
+        .stdout(predicate::str::contains("5"));
+}
+
+#[test]
+fn head_and_tail_combined() {
+    let f = csv_file("x\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n");
+    dtcat().arg(f.path()).arg("--head").arg("2").arg("--tail").arg("2")
+        .assert().success()
+        .stdout(predicate::str::contains("1"))
+        .stdout(predicate::str::contains("2"))
+        .stdout(predicate::str::contains("9"))
+        .stdout(predicate::str::contains("10"));
+}
+
+// ─── Output format ───
+
+#[test]
 fn csv_output_flag() {
     let f = csv_file("name,value\nAlice,100\n");
     dtcat().arg(f.path()).arg("--csv").assert().success()
         .stdout(predicate::str::contains("name,value"));
 }
 
-#[test]
-fn head_flag() {
-    let f = csv_file("x\n1\n2\n3\n4\n5\n");
-    dtcat().arg(f.path()).arg("--head").arg("2").assert().success();
-}
-
-#[test]
-fn nonexistent_file_exits_1() {
-    dtcat().arg("/tmp/does_not_exist_12345.csv").assert().failure();
-}
+// ─── Format detection ───
 
 #[test]
 fn format_override() {
@@ -58,9 +112,107 @@ fn format_override() {
 }
 
 #[test]
-fn describe_flag() {
-    let f = csv_file("name,value\nAlice,100\nBob,200\n");
-    dtcat().arg(f.path()).arg("--describe").assert().success()
-        .stdout(predicate::str::contains("count"))
-        .stdout(predicate::str::contains("mean"));
+fn tsv_detection() {
+    let mut f = NamedTempFile::with_suffix(".tsv").unwrap();
+    write!(f, "name\tvalue\nAlice\t100\n").unwrap();
+    f.flush().unwrap();
+    dtcat().arg(f.path()).assert().success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("100"));
+}
+
+// ─── Skip rows ───
+
+#[test]
+fn skip_metadata_rows() {
+    let f = csv_file("meta1\nmeta2\nname,value\nAlice,100\n");
+    dtcat().arg(f.path()).arg("--skip").arg("2").assert().success()
+        .stdout(predicate::str::contains("Alice"));
+}
+
+// ─── All flag ───
+
+#[test]
+fn all_flag_shows_every_row() {
+    // 60 rows > threshold of 50, so without --all we'd get head+tail
+    let mut content = String::from("x\n");
+    for i in 1..=60 {
+        content.push_str(&format!("{}\n", i));
+    }
+    let f = csv_file(&content);
+    // With --all, row 30 should appear (it would be omitted in head25+tail25)
+    dtcat().arg(f.path()).arg("--all").assert().success()
+        .stdout(predicate::str::contains("| 30 "));
+}
+
+// ─── Parquet ───
+
+#[test]
+fn parquet_view() {
+    dtcat().arg("tests/fixtures/data.parquet").assert().success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Charlie"));
+}
+
+#[test]
+fn parquet_schema() {
+    dtcat().arg("tests/fixtures/data.parquet").arg("--schema").assert().success()
+        .stdout(predicate::str::contains("name"))
+        .stdout(predicate::str::contains("value"));
+}
+
+// ─── Arrow/IPC ───
+
+#[test]
+fn arrow_view() {
+    dtcat().arg("tests/fixtures/data.arrow").assert().success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Charlie"));
+}
+
+#[test]
+fn arrow_schema() {
+    dtcat().arg("tests/fixtures/data.arrow").arg("--schema").assert().success()
+        .stdout(predicate::str::contains("name"))
+        .stdout(predicate::str::contains("value"));
+}
+
+// ─── JSON ───
+
+#[test]
+fn json_view() {
+    dtcat().arg("tests/fixtures/data.json").assert().success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Charlie"));
+}
+
+// ─── NDJSON ───
+
+#[test]
+fn ndjson_view() {
+    dtcat().arg("tests/fixtures/data.ndjson").assert().success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Charlie"));
+}
+
+// ─── Excel ───
+
+#[test]
+fn excel_view() {
+    dtcat().arg("demo/sales.xlsx").assert().success()
+        .stdout(predicate::str::contains("Revenue"));
+}
+
+#[test]
+fn excel_schema() {
+    dtcat().arg("demo/sales.xlsx").arg("--schema").assert().success()
+        .stdout(predicate::str::contains("Column"))
+        .stdout(predicate::str::contains("Revenue"));
+}
+
+#[test]
+fn excel_info() {
+    dtcat().arg("demo/sales.xlsx").arg("--info").assert().success()
+        .stdout(predicate::str::contains("Excel"))
+        .stdout(predicate::str::contains("Sheet1"));
 }

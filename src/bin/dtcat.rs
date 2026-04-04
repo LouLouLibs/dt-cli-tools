@@ -59,6 +59,10 @@ struct Args {
     #[arg(long)]
     csv: bool,
 
+    /// Show all rows (override adaptive row limit)
+    #[arg(long)]
+    all: bool,
+
     /// Show file metadata only
     #[arg(long)]
     info: bool,
@@ -239,8 +243,8 @@ fn run(args: Args) -> Result<()> {
             format_data_table(&sliced)
         }
         (None, None) => {
-            // Default: show all if <= threshold, otherwise head+tail
-            if df.height() <= DEFAULT_THRESHOLD {
+            // Default: show all if <= threshold or --all, otherwise head+tail
+            if args.all || df.height() <= DEFAULT_THRESHOLD {
                 format_data_table(&df)
             } else {
                 format_head_tail(&df, DEFAULT_HEAD_TAIL, DEFAULT_HEAD_TAIL)
