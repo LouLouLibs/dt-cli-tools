@@ -1,7 +1,6 @@
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use polars::prelude::*;
 use std::io::Write;
-use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
 use dtcore::format::Format;

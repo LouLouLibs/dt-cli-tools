@@ -107,10 +107,7 @@ mod tests {
         let mut f = NamedTempFile::with_suffix(".ndjson").unwrap();
         write!(
             f,
-            "{}\n{}\n{}\n",
-            r#"{"name":"Alice","value":100}"#,
-            r#"{"name":"Bob","value":200}"#,
-            r#"{"name":"Carol","value":300}"#
+            "{{\"name\":\"Alice\",\"value\":100}}\n{{\"name\":\"Bob\",\"value\":200}}\n{{\"name\":\"Carol\",\"value\":300}}\n"
         )
         .unwrap();
         f.flush().unwrap();
@@ -140,7 +137,7 @@ mod tests {
     #[test]
     fn read_ndjson_no_trailing_newline() {
         let mut f = NamedTempFile::with_suffix(".jsonl").unwrap();
-        write!(f, "{}\n{}", r#"{"x":1}"#, r#"{"x":2}"#).unwrap();
+        write!(f, "{{\"x\":1}}\n{{\"x\":2}}").unwrap();
         f.flush().unwrap();
 
         let df = read(f.path(), Format::Ndjson, &default_opts()).unwrap();
