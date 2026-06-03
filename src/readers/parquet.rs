@@ -9,9 +9,11 @@ pub fn read(path: &Path, opts: &ReadOptions) -> Result<DataFrame> {
     let mut df = ParquetReader::new(file).finish()?;
 
     if let Some(skip) = opts.skip_rows
-        && skip > 0 && skip < df.height() {
-            df = df.slice(skip as i64, df.height() - skip);
-        }
+        && skip > 0
+        && skip < df.height()
+    {
+        df = df.slice(skip as i64, df.height() - skip);
+    }
 
     Ok(df)
 }

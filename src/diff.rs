@@ -114,8 +114,16 @@ pub fn diff_positional(
     source_b: SheetSource,
 ) -> Result<DiffResult> {
     // Determine headers — use the longer header set.
-    let headers_a: Vec<String> = df_a.get_column_names().iter().map(|s| s.to_string()).collect();
-    let headers_b: Vec<String> = df_b.get_column_names().iter().map(|s| s.to_string()).collect();
+    let headers_a: Vec<String> = df_a
+        .get_column_names()
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    let headers_b: Vec<String> = df_b
+        .get_column_names()
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
 
     let headers = if headers_b.len() > headers_a.len() {
         if headers_a.len() != headers_b.len() {
@@ -218,13 +226,7 @@ fn build_key_map(
             .collect();
         let composite_key = key_values.join("\0");
         let values: Vec<String> = columns.iter().map(|col| cell_to_string(col, i)).collect();
-        map.insert(
-            composite_key,
-            KeyedRow {
-                values,
-                key_values,
-            },
-        );
+        map.insert(composite_key, KeyedRow { values, key_values });
     }
     map
 }
@@ -374,8 +376,16 @@ pub fn diff_keyed(
 ) -> Result<DiffResult> {
     let columns_a = df_a.get_columns();
     let columns_b = df_b.get_columns();
-    let headers_a: Vec<String> = df_a.get_column_names().iter().map(|s| s.to_string()).collect();
-    let headers_b: Vec<String> = df_b.get_column_names().iter().map(|s| s.to_string()).collect();
+    let headers_a: Vec<String> = df_a
+        .get_column_names()
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    let headers_b: Vec<String> = df_b
+        .get_column_names()
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
 
     // Resolve key column indices in both frames.
     let mut key_indices_a = Vec::new();
@@ -383,11 +393,19 @@ pub fn diff_keyed(
     for key_col in &opts.key_columns {
         match headers_a.iter().position(|h| h == key_col) {
             Some(idx) => key_indices_a.push(idx),
-            None => bail!("Key column '{}' not found in {}", key_col, source_a.file_name),
+            None => bail!(
+                "Key column '{}' not found in {}",
+                key_col,
+                source_a.file_name
+            ),
         }
         match headers_b.iter().position(|h| h == key_col) {
             Some(idx) => key_indices_b.push(idx),
-            None => bail!("Key column '{}' not found in {}", key_col, source_b.file_name),
+            None => bail!(
+                "Key column '{}' not found in {}",
+                key_col,
+                source_b.file_name
+            ),
         }
     }
 
@@ -556,7 +574,8 @@ mod tests {
         let df_b = df_a.clone();
         let opts = DiffOptions::default();
 
-        let result = diff_positional(&df_a, &df_b, &opts, test_source_a(), test_source_b()).unwrap();
+        let result =
+            diff_positional(&df_a, &df_b, &opts, test_source_a(), test_source_b()).unwrap();
 
         assert!(!result.has_differences());
         assert!(result.added.is_empty());
@@ -576,7 +595,8 @@ mod tests {
         .unwrap();
         let opts = DiffOptions::default();
 
-        let result = diff_positional(&df_a, &df_b, &opts, test_source_a(), test_source_b()).unwrap();
+        let result =
+            diff_positional(&df_a, &df_b, &opts, test_source_a(), test_source_b()).unwrap();
 
         assert!(result.has_differences());
         assert_eq!(result.removed.len(), 1);
@@ -597,7 +617,8 @@ mod tests {
         .unwrap();
         let opts = DiffOptions::default();
 
-        let result = diff_positional(&df_a, &df_b, &opts, test_source_a(), test_source_b()).unwrap();
+        let result =
+            diff_positional(&df_a, &df_b, &opts, test_source_a(), test_source_b()).unwrap();
 
         assert_eq!(result.removed.len(), 1);
         assert_eq!(result.removed[0].values, vec!["A"]);
@@ -781,7 +802,10 @@ mod tests {
 
         let result = diff_keyed(&df_a, &df_b, &opts, test_source_a(), test_source_b()).unwrap();
 
-        assert!(!result.has_differences(), "NaN vs NaN should be treated as equal");
+        assert!(
+            !result.has_differences(),
+            "NaN vs NaN should be treated as equal"
+        );
     }
 
     // ---- diff_sheets entry point tests ----

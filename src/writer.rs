@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use polars::prelude::*;
 use std::path::Path;
 

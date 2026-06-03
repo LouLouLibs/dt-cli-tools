@@ -20,7 +20,11 @@ fn csv_file(content: &str) -> NamedTempFile {
 fn no_diff_exits_0() {
     let a = csv_file("name,value\nAlice,100\n");
     let b = csv_file("name,value\nAlice,100\n");
-    dtdiff().arg(a.path()).arg(b.path()).assert().success()
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .assert()
+        .success()
         .stdout(predicate::str::contains("No differences"));
 }
 
@@ -35,7 +39,11 @@ fn positional_diff_exits_1() {
 fn positional_added_row() {
     let a = csv_file("name,value\nAlice,100\n");
     let b = csv_file("name,value\nAlice,100\nBob,200\n");
-    dtdiff().arg(a.path()).arg(b.path()).assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Added: 1"));
 }
 
@@ -43,7 +51,11 @@ fn positional_added_row() {
 fn positional_removed_row() {
     let a = csv_file("name,value\nAlice,100\nBob,200\n");
     let b = csv_file("name,value\nAlice,100\n");
-    dtdiff().arg(a.path()).arg(b.path()).assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Removed: 1"));
 }
 
@@ -53,8 +65,13 @@ fn positional_removed_row() {
 fn keyed_diff_modified() {
     let a = csv_file("id,name\n1,Alice\n2,Bob\n");
     let b = csv_file("id,name\n1,Alice\n2,Robert\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("id")
-        .assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("id")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Modified: 1"))
         .stdout(predicate::str::contains("Bob"));
 }
@@ -63,8 +80,13 @@ fn keyed_diff_modified() {
 fn keyed_diff_added_and_removed() {
     let a = csv_file("id,name\n1,Alice\n2,Bob\n");
     let b = csv_file("id,name\n1,Alice\n3,Charlie\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("id")
-        .assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("id")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Added: 1"))
         .stdout(predicate::str::contains("Removed: 1"));
 }
@@ -73,8 +95,13 @@ fn keyed_diff_added_and_removed() {
 fn keyed_no_diff() {
     let a = csv_file("id,name\n1,Alice\n2,Bob\n");
     let b = csv_file("id,name\n2,Bob\n1,Alice\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("id")
-        .assert().success()
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("id")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("No differences"));
 }
 
@@ -84,8 +111,13 @@ fn keyed_no_diff() {
 fn composite_key() {
     let a = csv_file("date,ticker,price\n2024-01-01,AAPL,150\n2024-01-01,GOOG,140\n");
     let b = csv_file("date,ticker,price\n2024-01-01,AAPL,150\n2024-01-01,GOOG,145\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("date,ticker")
-        .assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("date,ticker")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Modified: 1"))
         .stdout(predicate::str::contains("GOOG"));
 }
@@ -96,8 +128,15 @@ fn composite_key() {
 fn tolerance_suppresses_small_diff() {
     let a = csv_file("id,price\n1,150.000\n");
     let b = csv_file("id,price\n1,150.005\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("id").arg("--tolerance").arg("0.01")
-        .assert().success()
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("id")
+        .arg("--tolerance")
+        .arg("0.01")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("No differences"));
 }
 
@@ -105,8 +144,15 @@ fn tolerance_suppresses_small_diff() {
 fn tolerance_reports_large_diff() {
     let a = csv_file("id,price\n1,150.0\n");
     let b = csv_file("id,price\n1,155.0\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("id").arg("--tolerance").arg("0.01")
-        .assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("id")
+        .arg("--tolerance")
+        .arg("0.01")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Modified: 1"));
 }
 
@@ -114,17 +160,24 @@ fn tolerance_reports_large_diff() {
 
 #[test]
 fn parquet_keyed_diff() {
-    dtdiff().arg("tests/fixtures/old.parquet").arg("tests/fixtures/new.parquet")
-        .arg("--key").arg("id")
-        .assert().code(1)
+    dtdiff()
+        .arg("tests/fixtures/old.parquet")
+        .arg("tests/fixtures/new.parquet")
+        .arg("--key")
+        .arg("id")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Added: 1"))
         .stdout(predicate::str::contains("Removed: 1"));
 }
 
 #[test]
 fn parquet_no_diff() {
-    dtdiff().arg("tests/fixtures/data.parquet").arg("tests/fixtures/data.parquet")
-        .assert().success()
+    dtdiff()
+        .arg("tests/fixtures/data.parquet")
+        .arg("tests/fixtures/data.parquet")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("No differences"));
 }
 
@@ -132,9 +185,13 @@ fn parquet_no_diff() {
 
 #[test]
 fn arrow_keyed_diff() {
-    dtdiff().arg("tests/fixtures/old.arrow").arg("tests/fixtures/new.arrow")
-        .arg("--key").arg("id")
-        .assert().code(1)
+    dtdiff()
+        .arg("tests/fixtures/old.arrow")
+        .arg("tests/fixtures/new.arrow")
+        .arg("--key")
+        .arg("id")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Added: 1"))
         .stdout(predicate::str::contains("Removed: 1"));
 }
@@ -143,9 +200,13 @@ fn arrow_keyed_diff() {
 
 #[test]
 fn json_keyed_diff() {
-    dtdiff().arg("tests/fixtures/old.json").arg("tests/fixtures/new.json")
-        .arg("--key").arg("id")
-        .assert().code(1)
+    dtdiff()
+        .arg("tests/fixtures/old.json")
+        .arg("tests/fixtures/new.json")
+        .arg("--key")
+        .arg("id")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Modified: 1"));
 }
 
@@ -153,9 +214,13 @@ fn json_keyed_diff() {
 
 #[test]
 fn ndjson_keyed_diff() {
-    dtdiff().arg("tests/fixtures/old.ndjson").arg("tests/fixtures/new.ndjson")
-        .arg("--key").arg("id")
-        .assert().code(1)
+    dtdiff()
+        .arg("tests/fixtures/old.ndjson")
+        .arg("tests/fixtures/new.ndjson")
+        .arg("--key")
+        .arg("id")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Modified: 1"));
 }
 
@@ -165,8 +230,14 @@ fn ndjson_keyed_diff() {
 fn json_output() {
     let a = csv_file("id,val\n1,a\n");
     let b = csv_file("id,val\n1,b\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("id").arg("--json")
-        .assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("id")
+        .arg("--json")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("\"modified\""));
 }
 
@@ -174,8 +245,14 @@ fn json_output() {
 fn csv_output() {
     let a = csv_file("id,val\n1,a\n");
     let b = csv_file("id,val\n1,b\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--key").arg("id").arg("--csv")
-        .assert().code(1)
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--key")
+        .arg("id")
+        .arg("--csv")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("_status"));
 }
 
@@ -183,16 +260,25 @@ fn csv_output() {
 fn no_color_flag() {
     let a = csv_file("name,value\nAlice,100\n");
     let b = csv_file("name,value\nBob,200\n");
-    dtdiff().arg(a.path()).arg(b.path()).arg("--no-color")
-        .assert().code(1);
+    dtdiff()
+        .arg(a.path())
+        .arg(b.path())
+        .arg("--no-color")
+        .assert()
+        .code(1);
 }
 
 // ─── Excel ───
 
 #[test]
 fn excel_keyed_diff() {
-    dtdiff().arg("demo/old.xlsx").arg("demo/new.xlsx").arg("--key").arg("ID")
-        .assert().code(1)
+    dtdiff()
+        .arg("demo/old.xlsx")
+        .arg("demo/new.xlsx")
+        .arg("--key")
+        .arg("ID")
+        .assert()
+        .code(1)
         .stdout(predicate::str::contains("Added: 1"))
         .stdout(predicate::str::contains("Removed: 1"))
         .stdout(predicate::str::contains("Modified: 3"));
@@ -200,7 +286,10 @@ fn excel_keyed_diff() {
 
 #[test]
 fn excel_no_diff() {
-    dtdiff().arg("demo/old.xlsx").arg("demo/old.xlsx")
-        .assert().success()
+    dtdiff()
+        .arg("demo/old.xlsx")
+        .arg("demo/old.xlsx")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("No differences"));
 }

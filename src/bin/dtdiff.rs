@@ -7,7 +7,7 @@ use clap::Parser;
 use serde_json::{Map, Value, json};
 
 use dtcore::diff::{DiffOptions, DiffResult, SheetSource};
-use dtcore::format::{detect_format, Format};
+use dtcore::format::{Format, detect_format};
 use dtcore::reader::{ReadOptions, read_file};
 
 #[derive(Parser)]
@@ -127,12 +127,7 @@ fn format_text(result: &DiffResult, color: bool) -> String {
             .zip(m.key.iter())
             .map(|(col, val)| format!("{}: \"{}\"", col, val))
             .collect();
-        out.push_str(&format!(
-            "{}~ {}{}",
-            yellow,
-            key_display.join("  "),
-            reset,
-        ));
+        out.push_str(&format!("{}~ {}{}", yellow, key_display.join("  "), reset,));
         out.push('\n');
         for change in &m.changes {
             out.push_str(&format!(
@@ -218,7 +213,11 @@ fn csv_quote(value: &str) -> String {
 
 /// Build a CSV row from a slice of values.
 fn csv_row(values: &[String]) -> String {
-    values.iter().map(|v| csv_quote(v)).collect::<Vec<_>>().join(",")
+    values
+        .iter()
+        .map(|v| csv_quote(v))
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 /// Format diff result as CSV.

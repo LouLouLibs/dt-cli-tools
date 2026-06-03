@@ -14,9 +14,7 @@ pub fn write(df: &mut DataFrame, path: Option<&Path>, format: Format) -> Result<
     match path {
         Some(p) => {
             let file = std::fs::File::create(p)?;
-            CsvWriter::new(file)
-                .with_separator(separator)
-                .finish(df)?;
+            CsvWriter::new(file).with_separator(separator).finish(df)?;
         }
         None => {
             let mut buf = Vec::new();
@@ -43,7 +41,8 @@ mod tests {
         let f = NamedTempFile::with_suffix(".csv").unwrap();
         write(&mut df, Some(f.path()), Format::Csv).unwrap();
 
-        let result = crate::readers::csv::read(f.path(), &crate::reader::ReadOptions::default()).unwrap();
+        let result =
+            crate::readers::csv::read(f.path(), &crate::reader::ReadOptions::default()).unwrap();
         assert_eq!(result.height(), 2);
         assert_eq!(result.get_column_names(), df.get_column_names());
     }

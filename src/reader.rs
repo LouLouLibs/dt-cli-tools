@@ -9,9 +9,9 @@ use crate::readers;
 /// Options that control how a file is read.
 #[derive(Debug, Clone, Default)]
 pub struct ReadOptions {
-    pub sheet: Option<String>,     // Excel only
+    pub sheet: Option<String>, // Excel only
     pub skip_rows: Option<usize>,
-    pub separator: Option<u8>,     // CSV override
+    pub separator: Option<u8>, // CSV override
 }
 
 /// Read a file into a DataFrame, dispatching to the appropriate reader.

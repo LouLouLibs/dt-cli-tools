@@ -23,7 +23,9 @@ mod tests {
         let f = NamedTempFile::with_suffix(".parquet").unwrap();
         write(&mut df, Some(f.path())).unwrap();
 
-        let result = crate::readers::parquet::read(f.path(), &crate::reader::ReadOptions::default()).unwrap();
+        let result =
+            crate::readers::parquet::read(f.path(), &crate::reader::ReadOptions::default())
+                .unwrap();
         assert_eq!(result.height(), 2);
     }
 

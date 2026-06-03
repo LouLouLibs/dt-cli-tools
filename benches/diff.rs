@@ -1,10 +1,13 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use polars::prelude::*;
 
-use dtcore::diff::{DiffOptions, SheetSource, diff_positional, diff_keyed};
+use dtcore::diff::{DiffOptions, SheetSource, diff_keyed, diff_positional};
 
 fn source(name: &str) -> SheetSource {
-    SheetSource { file_name: name.into(), sheet_name: "Sheet1".into() }
+    SheetSource {
+        file_name: name.into(),
+        sheet_name: "Sheet1".into(),
+    }
 }
 
 fn make_df(n: usize, offset: i64) -> DataFrame {
@@ -16,12 +19,16 @@ fn make_df(n: usize, offset: i64) -> DataFrame {
         Series::new("id".into(), &ids).into_column(),
         Series::new("name".into(), &names).into_column(),
         Series::new("value".into(), &values).into_column(),
-    ]).unwrap()
+    ])
+    .unwrap()
 }
 
 fn bench_diff(c: &mut Criterion) {
     let opts_positional = DiffOptions::default();
-    let opts_keyed = DiffOptions { key_columns: vec!["id".into()], tolerance: None };
+    let opts_keyed = DiffOptions {
+        key_columns: vec!["id".into()],
+        tolerance: None,
+    };
 
     for &size in &[1_000, 10_000, 100_000] {
         let df_a = make_df(size, 0);
@@ -32,7 +39,9 @@ fn bench_diff(c: &mut Criterion) {
         let mut group = c.benchmark_group(format!("diff_{size}"));
 
         group.bench_function("positional", |b| {
-            b.iter(|| diff_positional(&df_a, &df_b, &opts_positional, source("a"), source("b")).unwrap())
+            b.iter(|| {
+                diff_positional(&df_a, &df_b, &opts_positional, source("a"), source("b")).unwrap()
+            })
         });
 
         group.bench_function("keyed", |b| {

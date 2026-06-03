@@ -19,7 +19,10 @@ fn csv_file(content: &str) -> NamedTempFile {
 #[test]
 fn shows_csv_data() {
     let f = csv_file("name,value\nAlice,100\nBob,200\n");
-    dtcat().arg(f.path()).assert().success()
+    dtcat()
+        .arg(f.path())
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("Bob"));
 }
@@ -27,13 +30,19 @@ fn shows_csv_data() {
 #[test]
 fn header_only_csv() {
     let f = csv_file("name,value\n");
-    dtcat().arg(f.path()).assert().success()
+    dtcat()
+        .arg(f.path())
+        .assert()
+        .success()
         .stdout(predicate::str::contains("no data rows"));
 }
 
 #[test]
 fn nonexistent_file_exits_1() {
-    dtcat().arg("/tmp/does_not_exist_12345.csv").assert().failure();
+    dtcat()
+        .arg("/tmp/does_not_exist_12345.csv")
+        .assert()
+        .failure();
 }
 
 // ─── Modes ───
@@ -41,7 +50,11 @@ fn nonexistent_file_exits_1() {
 #[test]
 fn schema_flag() {
     let f = csv_file("name,value\nAlice,100\n");
-    dtcat().arg(f.path()).arg("--schema").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--schema")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Column"))
         .stdout(predicate::str::contains("Type"));
 }
@@ -49,7 +62,11 @@ fn schema_flag() {
 #[test]
 fn describe_flag() {
     let f = csv_file("name,value\nAlice,100\nBob,200\n");
-    dtcat().arg(f.path()).arg("--describe").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--describe")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("count"))
         .stdout(predicate::str::contains("mean"));
 }
@@ -57,7 +74,11 @@ fn describe_flag() {
 #[test]
 fn info_flag() {
     let f = csv_file("name,value\nAlice,100\n");
-    dtcat().arg(f.path()).arg("--info").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--info")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("File:"));
 }
 
@@ -66,7 +87,12 @@ fn info_flag() {
 #[test]
 fn head_flag() {
     let f = csv_file("x\n1\n2\n3\n4\n5\n");
-    dtcat().arg(f.path()).arg("--head").arg("2").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--head")
+        .arg("2")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("1"))
         .stdout(predicate::str::contains("2"))
         .stdout(predicate::str::contains("3").not());
@@ -75,7 +101,12 @@ fn head_flag() {
 #[test]
 fn tail_flag() {
     let f = csv_file("x\n1\n2\n3\n4\n5\n");
-    dtcat().arg(f.path()).arg("--tail").arg("2").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--tail")
+        .arg("2")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("4"))
         .stdout(predicate::str::contains("5"));
 }
@@ -83,8 +114,14 @@ fn tail_flag() {
 #[test]
 fn head_and_tail_combined() {
     let f = csv_file("x\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n");
-    dtcat().arg(f.path()).arg("--head").arg("2").arg("--tail").arg("2")
-        .assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--head")
+        .arg("2")
+        .arg("--tail")
+        .arg("2")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("1"))
         .stdout(predicate::str::contains("2"))
         .stdout(predicate::str::contains("9"))
@@ -96,7 +133,11 @@ fn head_and_tail_combined() {
 #[test]
 fn csv_output_flag() {
     let f = csv_file("name,value\nAlice,100\n");
-    dtcat().arg(f.path()).arg("--csv").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--csv")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("name,value"));
 }
 
@@ -107,7 +148,12 @@ fn format_override() {
     let mut f = NamedTempFile::with_suffix(".txt").unwrap();
     write!(f, "a,b\n1,2\n").unwrap();
     f.flush().unwrap();
-    dtcat().arg(f.path()).arg("--format").arg("csv").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--format")
+        .arg("csv")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("1"));
 }
 
@@ -116,7 +162,10 @@ fn tsv_detection() {
     let mut f = NamedTempFile::with_suffix(".tsv").unwrap();
     write!(f, "name\tvalue\nAlice\t100\n").unwrap();
     f.flush().unwrap();
-    dtcat().arg(f.path()).assert().success()
+    dtcat()
+        .arg(f.path())
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("100"));
 }
@@ -126,7 +175,12 @@ fn tsv_detection() {
 #[test]
 fn skip_metadata_rows() {
     let f = csv_file("meta1\nmeta2\nname,value\nAlice,100\n");
-    dtcat().arg(f.path()).arg("--skip").arg("2").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--skip")
+        .arg("2")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"));
 }
 
@@ -141,7 +195,11 @@ fn all_flag_shows_every_row() {
     }
     let f = csv_file(&content);
     // With --all, row 30 should appear (it would be omitted in head25+tail25)
-    dtcat().arg(f.path()).arg("--all").assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--all")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("| 30 "));
 }
 
@@ -149,74 +207,128 @@ fn all_flag_shows_every_row() {
 
 #[test]
 fn sample_returns_n_rows() {
-    let out = dtcat().arg("demo/sales.csv").arg("--sample").arg("5").arg("--csv")
-        .assert().success();
+    let out = dtcat()
+        .arg("demo/sales.csv")
+        .arg("--sample")
+        .arg("5")
+        .arg("--csv")
+        .assert()
+        .success();
     let stdout = String::from_utf8(out.get_output().stdout.clone()).unwrap();
     let lines: Vec<&str> = stdout.trim().lines().collect();
-    assert_eq!(lines.len(), 6, "expected header + 5 rows, got {}", lines.len());
+    assert_eq!(
+        lines.len(),
+        6,
+        "expected header + 5 rows, got {}",
+        lines.len()
+    );
 }
 
 #[test]
 fn sample_ge_total_returns_all() {
     let f = csv_file("x\n1\n2\n3\n");
-    dtcat().arg(f.path()).arg("--sample").arg("100").arg("--csv")
-        .assert().success();
+    dtcat()
+        .arg(f.path())
+        .arg("--sample")
+        .arg("100")
+        .arg("--csv")
+        .assert()
+        .success();
 }
 
 #[test]
 fn sample_conflicts_with_head() {
     let f = csv_file("x\n1\n");
-    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--head").arg("1")
-        .assert().code(2);
+    dtcat()
+        .arg(f.path())
+        .arg("--sample")
+        .arg("1")
+        .arg("--head")
+        .arg("1")
+        .assert()
+        .code(2);
 }
 
 #[test]
 fn sample_conflicts_with_tail() {
     let f = csv_file("x\n1\n");
-    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--tail").arg("1")
-        .assert().code(2);
+    dtcat()
+        .arg(f.path())
+        .arg("--sample")
+        .arg("1")
+        .arg("--tail")
+        .arg("1")
+        .assert()
+        .code(2);
 }
 
 #[test]
 fn sample_conflicts_with_all() {
     let f = csv_file("x\n1\n");
-    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--all")
-        .assert().code(2);
+    dtcat()
+        .arg(f.path())
+        .arg("--sample")
+        .arg("1")
+        .arg("--all")
+        .assert()
+        .code(2);
 }
 
 #[test]
 fn sample_conflicts_with_schema() {
     let f = csv_file("x\n1\n");
-    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--schema")
-        .assert().code(2);
+    dtcat()
+        .arg(f.path())
+        .arg("--sample")
+        .arg("1")
+        .arg("--schema")
+        .assert()
+        .code(2);
 }
 
 #[test]
 fn sample_conflicts_with_describe() {
     let f = csv_file("x\n1\n");
-    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--describe")
-        .assert().code(2);
+    dtcat()
+        .arg(f.path())
+        .arg("--sample")
+        .arg("1")
+        .arg("--describe")
+        .assert()
+        .code(2);
 }
 
 #[test]
 fn sample_conflicts_with_info() {
     let f = csv_file("x\n1\n");
-    dtcat().arg(f.path()).arg("--sample").arg("1").arg("--info")
-        .assert().code(2);
+    dtcat()
+        .arg(f.path())
+        .arg("--sample")
+        .arg("1")
+        .arg("--info")
+        .assert()
+        .code(2);
 }
 
 // ─── Parquet ───
 
 #[test]
 fn parquet_view() {
-    dtcat().arg("tests/fixtures/data.parquet").assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.parquet")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("Charlie"));
 }
 
 #[test]
 fn parquet_schema() {
-    dtcat().arg("tests/fixtures/data.parquet").arg("--schema").assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.parquet")
+        .arg("--schema")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("name"))
         .stdout(predicate::str::contains("value"));
 }
@@ -225,14 +337,21 @@ fn parquet_schema() {
 
 #[test]
 fn arrow_view() {
-    dtcat().arg("tests/fixtures/data.arrow").assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.arrow")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("Charlie"));
 }
 
 #[test]
 fn arrow_schema() {
-    dtcat().arg("tests/fixtures/data.arrow").arg("--schema").assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.arrow")
+        .arg("--schema")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("name"))
         .stdout(predicate::str::contains("value"));
 }
@@ -241,7 +360,10 @@ fn arrow_schema() {
 
 #[test]
 fn json_view() {
-    dtcat().arg("tests/fixtures/data.json").assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.json")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("Charlie"));
 }
@@ -250,7 +372,10 @@ fn json_view() {
 
 #[test]
 fn ndjson_view() {
-    dtcat().arg("tests/fixtures/data.ndjson").assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.ndjson")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("Charlie"));
 }
@@ -259,20 +384,31 @@ fn ndjson_view() {
 
 #[test]
 fn excel_view() {
-    dtcat().arg("demo/sales.xlsx").assert().success()
+    dtcat()
+        .arg("demo/sales.xlsx")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Revenue"));
 }
 
 #[test]
 fn excel_schema() {
-    dtcat().arg("demo/sales.xlsx").arg("--schema").assert().success()
+    dtcat()
+        .arg("demo/sales.xlsx")
+        .arg("--schema")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Column"))
         .stdout(predicate::str::contains("Revenue"));
 }
 
 #[test]
 fn excel_info() {
-    dtcat().arg("demo/sales.xlsx").arg("--info").assert().success()
+    dtcat()
+        .arg("demo/sales.xlsx")
+        .arg("--info")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Excel"))
         .stdout(predicate::str::contains("Sheet1"));
 }
@@ -282,12 +418,19 @@ fn excel_info() {
 #[test]
 fn convert_csv_to_parquet() {
     let out = NamedTempFile::with_suffix(".parquet").unwrap();
-    dtcat().arg("tests/fixtures/data.csv")
-        .arg("--convert").arg("parquet")
-        .arg("-o").arg(out.path())
-        .assert().success();
-    dtcat().arg(out.path()).arg("--csv")
-        .assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.csv")
+        .arg("--convert")
+        .arg("parquet")
+        .arg("-o")
+        .arg(out.path())
+        .assert()
+        .success();
+    dtcat()
+        .arg(out.path())
+        .arg("--csv")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"))
         .stdout(predicate::str::contains("Charlie"));
 }
@@ -295,56 +438,85 @@ fn convert_csv_to_parquet() {
 #[test]
 fn convert_parquet_to_csv_file() {
     let out = NamedTempFile::with_suffix(".csv").unwrap();
-    dtcat().arg("tests/fixtures/data.parquet")
-        .arg("--convert").arg("csv")
-        .arg("-o").arg(out.path())
-        .assert().success();
-    dtcat().arg(out.path())
-        .assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.parquet")
+        .arg("--convert")
+        .arg("csv")
+        .arg("-o")
+        .arg(out.path())
+        .assert()
+        .success();
+    dtcat()
+        .arg(out.path())
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"));
 }
 
 #[test]
 fn convert_csv_to_json_stdout() {
-    dtcat().arg("tests/fixtures/data.csv")
-        .arg("--convert").arg("json")
-        .assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.csv")
+        .arg("--convert")
+        .arg("json")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"));
 }
 
 #[test]
 fn convert_csv_to_ndjson_stdout() {
-    dtcat().arg("tests/fixtures/data.csv")
-        .arg("--convert").arg("ndjson")
-        .assert().success()
+    dtcat()
+        .arg("tests/fixtures/data.csv")
+        .arg("--convert")
+        .arg("ndjson")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"));
 }
 
 #[test]
 fn convert_parquet_no_output_errors() {
-    dtcat().arg("tests/fixtures/data.csv")
-        .arg("--convert").arg("parquet")
-        .assert().failure();
+    dtcat()
+        .arg("tests/fixtures/data.csv")
+        .arg("--convert")
+        .arg("parquet")
+        .assert()
+        .failure();
 }
 
 #[test]
 fn convert_arrow_no_output_errors() {
-    dtcat().arg("tests/fixtures/data.csv")
-        .arg("--convert").arg("arrow")
-        .assert().failure();
+    dtcat()
+        .arg("tests/fixtures/data.csv")
+        .arg("--convert")
+        .arg("arrow")
+        .assert()
+        .failure();
 }
 
 #[test]
 fn convert_conflicts_with_schema() {
     let f = csv_file("x\n1\n");
-    dtcat().arg(f.path()).arg("--convert").arg("csv").arg("--schema")
-        .assert().code(2);
+    dtcat()
+        .arg(f.path())
+        .arg("--convert")
+        .arg("csv")
+        .arg("--schema")
+        .assert()
+        .code(2);
 }
 
 #[test]
 fn convert_with_skip() {
     let f = csv_file("meta\nname,value\nAlice,100\n");
-    dtcat().arg(f.path()).arg("--skip").arg("1").arg("--convert").arg("csv")
-        .assert().success()
+    dtcat()
+        .arg(f.path())
+        .arg("--skip")
+        .arg("1")
+        .arg("--convert")
+        .arg("csv")
+        .assert()
+        .success()
         .stdout(predicate::str::contains("Alice"));
 }

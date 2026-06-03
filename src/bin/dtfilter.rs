@@ -5,9 +5,9 @@ use std::process;
 use anyhow::{Result, bail};
 use clap::Parser;
 
-use dtcore::filter::{FilterOptions, parse_filter_expr, parse_sort_spec, filter_pipeline};
+use dtcore::filter::{FilterOptions, filter_pipeline, parse_filter_expr, parse_sort_spec};
 use dtcore::format::detect_format;
-use dtcore::formatter::{format_data_table, format_csv};
+use dtcore::formatter::{format_csv, format_data_table};
 use dtcore::reader::{ReadOptions, read_file};
 
 // ---------------------------------------------------------------------------
@@ -73,7 +73,9 @@ struct Args {
 /// Returns exit-code 2 on any argument error.
 fn validate_args(args: &Args) -> Result<(), ArgError> {
     if args.head.is_some() && args.tail.is_some() {
-        return Err(ArgError("--head and --tail are mutually exclusive".to_string()));
+        return Err(ArgError(
+            "--head and --tail are mutually exclusive".to_string(),
+        ));
     }
     Ok(())
 }

@@ -1,17 +1,17 @@
 use std::path::PathBuf;
 use std::process;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::Parser;
 
-use dtcore::format::{detect_format, parse_format_str, Format};
-use dtcore::writer::write_file;
+use dtcore::format::{Format, detect_format, parse_format_str};
 use dtcore::formatter::{
     format_csv, format_data_table, format_describe, format_empty_sheet, format_head_tail,
     format_header, format_schema, format_sheet_listing,
 };
 use dtcore::metadata::SheetInfo;
-use dtcore::reader::{read_file, read_file_info, ReadOptions};
+use dtcore::reader::{ReadOptions, read_file, read_file_info};
+use dtcore::writer::write_file;
 
 /// Default row threshold: show all rows if <= this many, otherwise head+tail
 const DEFAULT_THRESHOLD: usize = 50;
@@ -106,9 +106,14 @@ fn validate_args(args: &Args) -> Result<()> {
         }
     }
     if args.convert.is_some()
-        && (args.schema || args.describe || args.info || args.csv
-            || args.head.is_some() || args.tail.is_some()
-            || args.all || args.sample.is_some())
+        && (args.schema
+            || args.describe
+            || args.info
+            || args.csv
+            || args.head.is_some()
+            || args.tail.is_some()
+            || args.all
+            || args.sample.is_some())
     {
         bail!("--convert is mutually exclusive with display flags");
     }
@@ -150,7 +155,10 @@ fn run(args: Args) -> Result<()> {
             println!();
             for sheet in &info.sheets {
                 let data_rows = if sheet.rows == 0 { 0 } else { sheet.rows - 1 };
-                println!("  {} ({} rows x {} cols)", sheet.name, data_rows, sheet.cols);
+                println!(
+                    "  {} ({} rows x {} cols)",
+                    sheet.name, data_rows, sheet.cols
+                );
             }
         }
         return Ok(());
@@ -183,14 +191,9 @@ fn run(args: Args) -> Result<()> {
                     }
                 }
             }
-            let schema_refs: Vec<(&SheetInfo, polars::prelude::DataFrame)> = schemas
-                .iter()
-                .map(|(s, df)| (s, df.clone()))
-                .collect();
-            print!(
-                "{}",
-                format_sheet_listing(&file_name, &info, &schema_refs)
-            );
+            let schema_refs: Vec<(&SheetInfo, polars::prelude::DataFrame)> =
+                schemas.iter().map(|(s, df)| (s, df.clone())).collect();
+            print!("{}", format_sheet_listing(&file_name, &info, &schema_refs));
             return Ok(());
         }
     }

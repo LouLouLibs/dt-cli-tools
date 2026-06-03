@@ -22,7 +22,8 @@ mod tests {
         let f = NamedTempFile::with_suffix(".arrow").unwrap();
         write(&mut df, Some(f.path())).unwrap();
 
-        let result = crate::readers::arrow::read(f.path(), &crate::reader::ReadOptions::default()).unwrap();
+        let result =
+            crate::readers::arrow::read(f.path(), &crate::reader::ReadOptions::default()).unwrap();
         assert_eq!(result.height(), 3);
     }
 

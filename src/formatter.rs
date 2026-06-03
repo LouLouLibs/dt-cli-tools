@@ -1,4 +1,4 @@
-use crate::metadata::{format_file_size, format_name, FileInfo, SheetInfo};
+use crate::metadata::{FileInfo, SheetInfo, format_file_size, format_name};
 use polars::prelude::*;
 use std::fmt::Write as FmtWrite;
 
@@ -45,7 +45,12 @@ pub fn format_schema(sheet: &SheetInfo, df: &DataFrame) -> String {
     let rows: Vec<Vec<String>> = df
         .get_columns()
         .iter()
-        .map(|col| vec![col.name().to_string(), format_dtype(col.dtype()).to_string()])
+        .map(|col| {
+            vec![
+                col.name().to_string(),
+                format_dtype(col.dtype()).to_string(),
+            ]
+        })
         .collect();
     out.push_str(&render_table(&headers, &rows));
     out
@@ -113,10 +118,7 @@ pub fn format_head_tail(df: &DataFrame, head_n: usize, tail_n: usize) -> String 
 pub fn format_csv(df: &DataFrame) -> String {
     let mut buf: Vec<u8> = Vec::new();
     // CsvWriter is available via the "csv" feature (polars 0.46)
-    if CsvWriter::new(&mut buf)
-        .finish(&mut df.clone())
-        .is_ok()
-    {
+    if CsvWriter::new(&mut buf).finish(&mut df.clone()).is_ok() {
         return String::from_utf8(buf).unwrap_or_else(|_| csv_fallback(df));
     }
     csv_fallback(df)
@@ -140,7 +142,16 @@ pub fn format_empty_sheet(sheet: &SheetInfo) -> String {
 /// ...
 pub fn format_describe(df: &DataFrame) -> String {
     let columns = df.get_columns();
-    let stats = ["count", "null_count", "mean", "std", "min", "max", "median", "unique"];
+    let stats = [
+        "count",
+        "null_count",
+        "mean",
+        "std",
+        "min",
+        "max",
+        "median",
+        "unique",
+    ];
 
     let mut headers = vec!["stat".to_string()];
     headers.extend(columns.iter().map(|c| c.name().to_string()));
@@ -164,14 +175,20 @@ fn compute_stat(col: &Column, stat: &str) -> String {
         "null_count" => series.null_count().to_string(),
         "mean" => {
             if is_numeric(series.dtype()) {
-                series.mean().map(|v| format!("{v:.4}")).unwrap_or_else(|| "-".into())
+                series
+                    .mean()
+                    .map(|v| format!("{v:.4}"))
+                    .unwrap_or_else(|| "-".into())
             } else {
                 "-".into()
             }
         }
         "std" => {
             if is_numeric(series.dtype()) {
-                series.std(1).map(|v| format!("{v:.4}")).unwrap_or_else(|| "-".into())
+                series
+                    .std(1)
+                    .map(|v| format!("{v:.4}"))
+                    .unwrap_or_else(|| "-".into())
             } else {
                 "-".into()
             }
@@ -198,7 +215,10 @@ fn compute_stat(col: &Column, stat: &str) -> String {
         }
         "median" => {
             if is_numeric(series.dtype()) {
-                series.median().map(|v| format!("{v:.4}")).unwrap_or_else(|| "-".into())
+                series
+                    .median()
+                    .map(|v| format!("{v:.4}"))
+                    .unwrap_or_else(|| "-".into())
             } else {
                 "-".into()
             }
@@ -280,7 +300,11 @@ pub fn render_table_rows(rows: &[Vec<String>], widths: &[usize]) -> String {
     for row in rows {
         out.push('|');
         for (i, cell) in row.iter().enumerate() {
-            let w = if i < widths.len() { widths[i] } else { cell.len() };
+            let w = if i < widths.len() {
+                widths[i]
+            } else {
+                cell.len()
+            };
             let _ = write!(out, " {:<w$} |", cell, w = w);
         }
         out.push('\n');
@@ -391,8 +415,16 @@ mod tests {
             file_size: 250_000,
             format: Format::Excel,
             sheets: vec![
-                SheetInfo { name: "Sheet1".into(), rows: 100, cols: 5 },
-                SheetInfo { name: "Sheet2".into(), rows: 50, cols: 3 },
+                SheetInfo {
+                    name: "Sheet1".into(),
+                    rows: 100,
+                    cols: 5,
+                },
+                SheetInfo {
+                    name: "Sheet2".into(),
+                    rows: 50,
+                    cols: 3,
+                },
             ],
         };
         let out = format_header("test.xlsx", &info);
@@ -406,7 +438,11 @@ mod tests {
         let info = FileInfo {
             file_size: 1_000,
             format: Format::Csv,
-            sheets: vec![SheetInfo { name: "data".into(), rows: 10, cols: 3 }],
+            sheets: vec![SheetInfo {
+                name: "data".into(),
+                rows: 10,
+                cols: 3,
+            }],
         };
         let out = format_header("data.csv", &info);
         assert!(out.contains("[CSV]"));
@@ -474,14 +510,22 @@ mod tests {
 
     #[test]
     fn test_format_empty_sheet_completely_empty() {
-        let sheet = SheetInfo { name: "Blank".into(), rows: 0, cols: 0 };
+        let sheet = SheetInfo {
+            name: "Blank".into(),
+            rows: 0,
+            cols: 0,
+        };
         let out = format_empty_sheet(&sheet);
         assert!(out.contains("(empty)"));
     }
 
     #[test]
     fn test_format_empty_sheet_header_only() {
-        let sheet = SheetInfo { name: "Headers".into(), rows: 1, cols: 3 };
+        let sheet = SheetInfo {
+            name: "Headers".into(),
+            rows: 1,
+            cols: 3,
+        };
         let out = format_empty_sheet(&sheet);
         assert!(out.contains("(no data rows)"));
     }

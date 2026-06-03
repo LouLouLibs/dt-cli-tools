@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::io::Read;
 use std::path::Path;
 
@@ -54,8 +54,8 @@ pub fn detect_by_extension(path: &Path) -> Result<Format> {
 /// magic bytes. Returns `None` for formats (CSV/TSV) that have no distinctive
 /// magic sequence.
 pub fn detect_by_magic(path: &Path) -> Result<Option<Format>> {
-    let mut file = std::fs::File::open(path)
-        .map_err(|e| anyhow!("cannot open {:?}: {}", path, e))?;
+    let mut file =
+        std::fs::File::open(path).map_err(|e| anyhow!("cannot open {:?}: {}", path, e))?;
     let mut buf = [0u8; 8];
     let n = file.read(&mut buf)?;
     let bytes = &buf[..n];
@@ -123,8 +123,8 @@ pub fn detect_csv_delimiter(path: &Path) -> Result<u8> {
     const MAX_BYTES: usize = 8 * 1024;
     const MAX_LINES: usize = 10;
 
-    let mut file = std::fs::File::open(path)
-        .map_err(|e| anyhow!("cannot open {:?}: {}", path, e))?;
+    let mut file =
+        std::fs::File::open(path).map_err(|e| anyhow!("cannot open {:?}: {}", path, e))?;
 
     let mut buf = vec![0u8; MAX_BYTES];
     let n = file.read(&mut buf)?;
@@ -347,57 +347,39 @@ mod tests {
     #[test]
     fn magic_parquet() {
         let f = temp_with(b"PAR1\x00\x01\x02\x03");
-        assert_eq!(
-            detect_by_magic(f.path()).unwrap(),
-            Some(Format::Parquet)
-        );
+        assert_eq!(detect_by_magic(f.path()).unwrap(), Some(Format::Parquet));
     }
 
     #[test]
     fn magic_arrow() {
         let f = temp_with(b"ARROW1\x00\x00");
-        assert_eq!(
-            detect_by_magic(f.path()).unwrap(),
-            Some(Format::Arrow)
-        );
+        assert_eq!(detect_by_magic(f.path()).unwrap(), Some(Format::Arrow));
     }
 
     #[test]
     fn magic_xlsx() {
         // ZIP magic: PK (0x50 0x4B)
         let f = temp_with(&[0x50, 0x4B, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]);
-        assert_eq!(
-            detect_by_magic(f.path()).unwrap(),
-            Some(Format::Excel)
-        );
+        assert_eq!(detect_by_magic(f.path()).unwrap(), Some(Format::Excel));
     }
 
     #[test]
     fn magic_xls_ole() {
         // OLE2: D0 CF 11 E0
         let f = temp_with(&[0xD0, 0xCF, 0x11, 0xE0, 0x00, 0x00, 0x00, 0x00]);
-        assert_eq!(
-            detect_by_magic(f.path()).unwrap(),
-            Some(Format::Excel)
-        );
+        assert_eq!(detect_by_magic(f.path()).unwrap(), Some(Format::Excel));
     }
 
     #[test]
     fn magic_json_array() {
         let f = temp_with(b"[{\"a\":1}]");
-        assert_eq!(
-            detect_by_magic(f.path()).unwrap(),
-            Some(Format::Json)
-        );
+        assert_eq!(detect_by_magic(f.path()).unwrap(), Some(Format::Json));
     }
 
     #[test]
     fn magic_ndjson() {
         let f = temp_with(b"{\"a\":1}\n{\"b\":2}\n");
-        assert_eq!(
-            detect_by_magic(f.path()).unwrap(),
-            Some(Format::Ndjson)
-        );
+        assert_eq!(detect_by_magic(f.path()).unwrap(), Some(Format::Ndjson));
     }
 
     #[test]

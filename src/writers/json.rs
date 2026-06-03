@@ -42,7 +42,12 @@ mod tests {
         let f = NamedTempFile::with_suffix(".json").unwrap();
         write(&mut df, Some(f.path()), Format::Json).unwrap();
 
-        let result = crate::readers::json::read(f.path(), Format::Json, &crate::reader::ReadOptions::default()).unwrap();
+        let result = crate::readers::json::read(
+            f.path(),
+            Format::Json,
+            &crate::reader::ReadOptions::default(),
+        )
+        .unwrap();
         assert_eq!(result.height(), 2);
     }
 
@@ -54,7 +59,12 @@ mod tests {
         let f = NamedTempFile::with_suffix(".ndjson").unwrap();
         write(&mut df, Some(f.path()), Format::Ndjson).unwrap();
 
-        let result = crate::readers::json::read(f.path(), Format::Ndjson, &crate::reader::ReadOptions::default()).unwrap();
+        let result = crate::readers::json::read(
+            f.path(),
+            Format::Ndjson,
+            &crate::reader::ReadOptions::default(),
+        )
+        .unwrap();
         assert_eq!(result.height(), 2);
     }
 }

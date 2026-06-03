@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use calamine::{open_workbook_auto, Data, Reader};
+use calamine::{Data, Reader, open_workbook_auto};
 use polars::prelude::*;
 use std::path::Path;
 

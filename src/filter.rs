@@ -31,14 +31,12 @@ pub struct SortSpec {
 /// then determines the full operator.
 pub fn parse_filter_expr(s: &str) -> Result<FilterExpr, String> {
     let op_chars = ['=', '!', '>', '<', '~'];
-    let pos = s
-        .find(|c: char| op_chars.contains(&c))
-        .ok_or_else(|| {
-            format!(
-                "no operator found in '{}'. Use =, !=, >, <, >=, <=, ~ or !~",
-                s
-            )
-        })?;
+    let pos = s.find(|c: char| op_chars.contains(&c)).ok_or_else(|| {
+        format!(
+            "no operator found in '{}'. Use =, !=, >, <, >=, <=, ~ or !~",
+            s
+        )
+    })?;
     if pos == 0 {
         return Err(format!("missing column name in '{}'", s));
     }
@@ -109,12 +107,18 @@ pub fn resolve_column(spec: &str, df_columns: &[String]) -> Result<String, Strin
         }
     }
     let available = df_columns.join(", ");
-    Err(format!("column '{}' not found. Available columns: {}", spec, available))
+    Err(format!(
+        "column '{}' not found. Available columns: {}",
+        spec, available
+    ))
 }
 
 /// Resolve a list of column specifiers to DataFrame column names.
 pub fn resolve_columns(specs: &[String], df_columns: &[String]) -> Result<Vec<String>, String> {
-    specs.iter().map(|s| resolve_column(s, df_columns)).collect()
+    specs
+        .iter()
+        .map(|s| resolve_column(s, df_columns))
+        .collect()
 }
 
 /// Check if a polars DataType is numeric.
@@ -136,26 +140,30 @@ fn is_numeric_dtype(dtype: &DataType) -> bool {
 
 /// Build a boolean mask for a single filter expression against a DataFrame.
 fn build_filter_mask(df: &DataFrame, expr: &FilterExpr) -> Result<BooleanChunked> {
-    let col = df.column(&expr.column).map_err(|e| anyhow::anyhow!("{}", e))?;
+    let col = df
+        .column(&expr.column)
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
     let series = col.as_materialized_series();
     let dtype = series.dtype();
 
     match &expr.op {
         FilterOp::Eq => {
             if is_numeric_dtype(dtype)
-                && let Ok(n) = expr.value.parse::<f64>() {
-                    let s = series.cast(&DataType::Float64)?;
-                    return Ok(s.f64()?.equal(n));
-                }
+                && let Ok(n) = expr.value.parse::<f64>()
+            {
+                let s = series.cast(&DataType::Float64)?;
+                return Ok(s.f64()?.equal(n));
+            }
             let s = series.cast(&DataType::String)?;
             Ok(s.str()?.equal(expr.value.as_str()))
         }
         FilterOp::NotEq => {
             if is_numeric_dtype(dtype)
-                && let Ok(n) = expr.value.parse::<f64>() {
-                    let s = series.cast(&DataType::Float64)?;
-                    return Ok(s.f64()?.not_equal(n));
-                }
+                && let Ok(n) = expr.value.parse::<f64>()
+            {
+                let s = series.cast(&DataType::Float64)?;
+                return Ok(s.f64()?.not_equal(n));
+            }
             let s = series.cast(&DataType::String)?;
             Ok(s.str()?.not_equal(expr.value.as_str()))
         }
@@ -183,8 +191,13 @@ fn build_filter_mask(df: &DataFrame, expr: &FilterExpr) -> Result<BooleanChunked
             let s = series.cast(&DataType::String)?;
             let ca = s.str()?;
             let pat = expr.value.to_lowercase();
-            let mask: BooleanChunked = ca.into_iter()
-                .map(|opt_s| opt_s.map(|s| s.to_lowercase().contains(&pat)).unwrap_or(false))
+            let mask: BooleanChunked = ca
+                .into_iter()
+                .map(|opt_s| {
+                    opt_s
+                        .map(|s| s.to_lowercase().contains(&pat))
+                        .unwrap_or(false)
+                })
                 .collect();
             Ok(mask)
         }
@@ -192,8 +205,13 @@ fn build_filter_mask(df: &DataFrame, expr: &FilterExpr) -> Result<BooleanChunked
             let s = series.cast(&DataType::String)?;
             let ca = s.str()?;
             let pat = expr.value.to_lowercase();
-            let mask: BooleanChunked = ca.into_iter()
-                .map(|opt_s| opt_s.map(|s| !s.to_lowercase().contains(&pat)).unwrap_or(true))
+            let mask: BooleanChunked = ca
+                .into_iter()
+                .map(|opt_s| {
+                    opt_s
+                        .map(|s| !s.to_lowercase().contains(&pat))
+                        .unwrap_or(true)
+                })
                 .collect();
             Ok(mask)
         }
@@ -229,8 +247,7 @@ pub struct FilterOptions {
 
 /// Apply a sort specification to a DataFrame.
 pub fn apply_sort(df: &DataFrame, spec: &SortSpec) -> Result<DataFrame> {
-    let opts = SortMultipleOptions::default()
-        .with_order_descending(spec.descending);
+    let opts = SortMultipleOptions::default().with_order_descending(spec.descending);
     Ok(df.sort([&spec.column], opts)?)
 }
 
@@ -270,8 +287,8 @@ pub fn filter_pipeline(df: DataFrame, opts: &FilterOptions) -> Result<DataFrame>
 
     // 3. Sort
     let df = if let Some(ref spec) = opts.sort {
-        let resolved_col = resolve_column(&spec.column, &df_columns)
-            .map_err(|e| anyhow::anyhow!("{}", e))?;
+        let resolved_col =
+            resolve_column(&spec.column, &df_columns).map_err(|e| anyhow::anyhow!("{}", e))?;
         let resolved_spec = SortSpec {
             column: resolved_col,
             descending: spec.descending,
@@ -290,8 +307,8 @@ pub fn filter_pipeline(df: DataFrame, opts: &FilterOptions) -> Result<DataFrame>
 
     // 5. Select columns
     let df = if let Some(ref col_specs) = opts.cols {
-        let resolved_cols = resolve_columns(col_specs, &df_columns)
-            .map_err(|e| anyhow::anyhow!("{}", e))?;
+        let resolved_cols =
+            resolve_columns(col_specs, &df_columns).map_err(|e| anyhow::anyhow!("{}", e))?;
         let col_refs: Vec<&str> = resolved_cols.iter().map(|s| s.as_str()).collect();
         df.select(col_refs)?
     } else {
@@ -311,7 +328,10 @@ mod tests {
             Column::new("City".into(), &["LA", "NYC", "SF", "Houston", "Albany"]),
             Column::new("Amount".into(), &[1500i64, 2000, 800, 1200, 500]),
             Column::new("Year".into(), &[2023i64, 2023, 2024, 2024, 2023]),
-            Column::new("Status".into(), &["Active", "Active", "Draft", "Active", "Draft"]),
+            Column::new(
+                "Status".into(),
+                &["Active", "Active", "Draft", "Active", "Draft"],
+            ),
         ])
         .unwrap()
     }
@@ -538,7 +558,11 @@ mod tests {
 
     #[test]
     fn resolve_by_header_name() {
-        let cols = vec!["State".to_string(), "Amount".to_string(), "Year".to_string()];
+        let cols = vec![
+            "State".to_string(),
+            "Amount".to_string(),
+            "Year".to_string(),
+        ];
         assert_eq!(resolve_column("Amount", &cols).unwrap(), "Amount");
     }
 
@@ -557,7 +581,11 @@ mod tests {
 
     #[test]
     fn resolve_multiple_columns() {
-        let cols = vec!["State".to_string(), "Amount".to_string(), "Year".to_string()];
+        let cols = vec![
+            "State".to_string(),
+            "Amount".to_string(),
+            "Year".to_string(),
+        ];
         let resolved = resolve_columns(&["State".to_string(), "Year".to_string()], &cols).unwrap();
         assert_eq!(resolved, vec!["State", "Year"]);
     }
