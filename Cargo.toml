@@ -1,6 +1,6 @@
 [package]
 name = "dt-cli-tools"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "CLI tools for viewing, filtering, and comparing tabular data files"
 license = "MIT"
