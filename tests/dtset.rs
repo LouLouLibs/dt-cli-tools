@@ -324,3 +324,22 @@ fn from_csv_quoted_comma() {
         .success()
         .stdout(predicate::str::contains("x, y"));
 }
+
+#[test]
+fn rejects_output_with_other_macro_kind() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("test.xlsx");
+    let out = dir.path().join("out.xlsm");
+    common::xlsx::create_simple(&path);
+
+    dtset()
+        .arg(path.to_str().unwrap())
+        .arg("-o")
+        .arg(out.to_str().unwrap())
+        .arg("A1=1")
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains(".xlsx"));
+
+    assert!(!out.exists());
+}

@@ -27,6 +27,25 @@ pub fn check_editable(path: &Path) -> Result<(), String> {
     }
 }
 
+/// Check that `output` keeps the input's macro kind: umya writes the input's content
+/// types, so .xlsm → .xlsx (or the reverse) produces a file Excel refuses to open.
+pub fn check_output_kind(input: &Path, output: &Path) -> Result<(), String> {
+    let ext = |p: &Path| {
+        p.extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase()
+    };
+    let (want, got) = (ext(input), ext(output));
+    if want == got {
+        return Ok(());
+    }
+    Err(format!(
+        "output '{}' must keep the input's .{want} extension — macro-enabled (.xlsm) and plain (.xlsx) workbooks are not interchangeable",
+        output.display()
+    ))
+}
+
 /// Write cell assignments to an Excel workbook, preserving existing content and formatting.
 ///
 /// Opens the workbook at `input_path`, resolves the target sheet, applies all assignments,
@@ -42,6 +61,21 @@ pub fn write_cells(
 ) -> Result<(usize, String)> {
     check_editable(input_path).map_err(anyhow::Error::msg)?;
     check_editable(output_path).map_err(anyhow::Error::msg)?;
+    check_output_kind(input_path, output_path).map_err(anyhow::Error::msg)?;
+
+    // Edit through symlinks: replace the link's target, not the link itself.
+    let output_path = &match std::fs::symlink_metadata(output_path) {
+        Ok(_) => std::fs::canonicalize(output_path)
+            .with_context(|| format!("failed to resolve '{}'", output_path.display()))?,
+        Err(_) => output_path.to_path_buf(),
+    };
+    let existing = std::fs::metadata(output_path).ok();
+    if existing
+        .as_ref()
+        .is_some_and(|m| m.permissions().readonly())
+    {
+        bail!("'{}' is read-only", output_path.display());
+    }
 
     let mut book = umya_spreadsheet::reader::xlsx::read(input_path)
         .with_context(|| format!("failed to open workbook '{}'", input_path.display()))?;
@@ -59,13 +93,18 @@ pub fn write_cells(
         apply_assignment(sheet, assignment);
     }
 
-    save_atomic(&book, output_path)?;
+    save_atomic(&book, output_path, existing.map(|m| m.permissions()))?;
 
     Ok((assignments.len(), sheet_name))
 }
 
 /// Save `book` to a temp file next to `output_path`, then rename it into place.
-fn save_atomic(book: &umya_spreadsheet::Spreadsheet, output_path: &Path) -> Result<()> {
+/// `permissions` (those of the file being replaced) are applied to the new file.
+fn save_atomic(
+    book: &umya_spreadsheet::Spreadsheet,
+    output_path: &Path,
+    permissions: Option<std::fs::Permissions>,
+) -> Result<()> {
     let dir = match output_path.parent() {
         Some(p) if !p.as_os_str().is_empty() => p,
         _ => Path::new("."),
@@ -78,6 +117,12 @@ fn save_atomic(book: &umya_spreadsheet::Spreadsheet, output_path: &Path) -> Resu
 
     umya_spreadsheet::writer::xlsx::write(book, tmp.path())
         .with_context(|| format!("failed to write workbook to '{}'", output_path.display()))?;
+
+    // umya replaces the temp file with its own, so set permissions after writing.
+    if let Some(perms) = permissions {
+        std::fs::set_permissions(tmp.path(), perms)
+            .with_context(|| format!("failed to set permissions on '{}'", output_path.display()))?;
+    }
 
     tmp.persist(output_path)
         .with_context(|| format!("failed to replace '{}'", output_path.display()))?;
@@ -294,12 +339,64 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("f.xlsx");
         create_with_formula(&path);
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+        // Neither mode is the umask default, so a reset to 0644 fails the test.
+        for want in [0o600, 0o755] {
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(want)).unwrap();
+            let a = parse_assignment("B1=hello").unwrap();
+            write_cells(&path, &path, None, &[a]).unwrap();
+            let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, want, "mode {want:o} not preserved");
+        }
+    }
 
-        let a = parse_assignment("B1=hello").unwrap();
-        write_cells(&path, &path, None, &[a]).unwrap();
-        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
-        assert_eq!(mode, 0o644);
+    #[cfg(unix)]
+    #[test]
+    fn read_only_output_is_refused() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("ro.xlsx");
+        create_with_formula(&path);
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o444)).unwrap();
+        let before = std::fs::read(&path).unwrap();
+
+        let a = parse_assignment("A1=99").unwrap();
+        let err = write_cells(&path, &path, None, &[a]).unwrap_err();
+        assert!(err.to_string().contains("read-only"), "{err}");
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlinked_output_updates_target() {
+        let dir = TempDir::new().unwrap();
+        let real_dir = dir.path().join("real");
+        std::fs::create_dir(&real_dir).unwrap();
+        let target = real_dir.join("t.xlsx");
+        create_with_formula(&target);
+        let link = dir.path().join("link.xlsx");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        let a = parse_assignment("A1=42").unwrap();
+        write_cells(&link, &link, None, &[a]).unwrap();
+
+        assert!(
+            std::fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        let book = umya_spreadsheet::reader::xlsx::read(&target).unwrap();
+        assert_eq!(book.get_sheet(&0).unwrap().get_value("A1"), "42");
+    }
+
+    #[test]
+    fn check_output_kind_rejects_macro_mismatch() {
+        let x = Path::new("a.xlsx");
+        let m = Path::new("b.XLSM");
+        assert!(check_output_kind(x, Path::new("c.XLSX")).is_ok());
+        assert!(check_output_kind(m, Path::new("c.xlsm")).is_ok());
+        assert!(check_output_kind(m, x).unwrap_err().contains(".xlsm"));
+        assert!(check_output_kind(x, m).unwrap_err().contains(".xlsx"));
     }
 
     #[test]

@@ -1,5 +1,5 @@
 use dtcore::edit::cell::{CellAssignment, parse_assignment, parse_cell_ref};
-use dtcore::edit::xlsx::{check_editable, write_cells};
+use dtcore::edit::xlsx::{check_editable, check_output_kind, write_cells};
 
 use anyhow::Result;
 use clap::Parser;
@@ -174,6 +174,7 @@ fn run(cli: &Cli) -> Result<()> {
     check_editable(&cli.file).map_err(ArgError)?;
     if let Some(ref out) = cli.output {
         check_editable(out).map_err(ArgError)?;
+        check_output_kind(&cli.file, out).map_err(ArgError)?;
     }
 
     // 3. Collect assignments from --from CSV if provided
