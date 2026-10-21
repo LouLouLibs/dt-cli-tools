@@ -106,11 +106,10 @@ fn resolve_sheet_index(
     }
 
     // Try 0-based index
-    if let Ok(idx) = selector.parse::<usize>() {
-        if idx < sheet_count {
+    if let Ok(idx) = selector.parse::<usize>()
+        && idx < sheet_count {
             return Ok(idx);
         }
-    }
 
     // Build error with available names
     let names: Vec<&str> = sheets.iter().map(|ws| ws.get_name()).collect();

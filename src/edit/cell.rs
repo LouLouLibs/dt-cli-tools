@@ -140,11 +140,10 @@ pub fn infer_value(s: &str) -> CellValue {
     }
 
     // Integer (must not contain a '.' to avoid "1.0" being parsed as integer)
-    if !s.contains('.') {
-        if let Ok(i) = s.parse::<i64>() {
+    if !s.contains('.')
+        && let Ok(i) = s.parse::<i64>() {
             return CellValue::Integer(i);
         }
-    }
 
     // Float
     if let Ok(f) = s.parse::<f64>() {
@@ -176,7 +175,7 @@ fn try_parse_date(s: &str) -> Option<CellValue> {
     let year: i32 = parts[0].parse().ok()?;
     let month: u32 = parts[1].parse().ok()?;
     let day: u32 = parts[2].parse().ok()?;
-    if month < 1 || month > 12 || day < 1 || day > 31 {
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
         return None;
     }
     Some(CellValue::Date { year, month, day })
@@ -190,11 +189,10 @@ fn coerce_value(raw: &str, tag: &str) -> Result<CellValue, String> {
         "str" => Ok(CellValue::String(raw.to_string())),
         "num" => {
             // Try integer first, then float
-            if !raw.contains('.') {
-                if let Ok(i) = raw.parse::<i64>() {
+            if !raw.contains('.')
+                && let Ok(i) = raw.parse::<i64>() {
                     return Ok(CellValue::Integer(i));
                 }
-            }
             raw.parse::<f64>()
                 .map(CellValue::Float)
                 .map_err(|_| format!("cannot coerce '{}' to num", raw))
@@ -332,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_infer_float() {
-        assert_eq!(infer_value("3.14"), CellValue::Float(3.14));
+        assert_eq!(infer_value("2.75"), CellValue::Float(2.75));
     }
 
     #[test]
@@ -417,8 +415,8 @@ mod tests {
 
     #[test]
     fn test_assignment_num_tag() {
-        let a = parse_assignment("A1:num=3.14").unwrap();
-        assert_eq!(a.value, CellValue::Float(3.14));
+        let a = parse_assignment("A1:num=2.75").unwrap();
+        assert_eq!(a.value, CellValue::Float(2.75));
     }
 
     #[test]
