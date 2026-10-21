@@ -1,4 +1,6 @@
 pub mod diff;
+#[cfg(feature = "alpha")]
+pub mod edit;
 pub mod filter;
 pub mod format;
 pub mod formatter;

@@ -26,3 +26,9 @@ jobs:
 
       - name: Test
         run: cargo test --locked
+
+      - name: Clippy (alpha)
+        run: cargo clippy --all-targets --locked --features alpha -- -D warnings
+
+      - name: Test (alpha)
+        run: cargo test --locked --features alpha

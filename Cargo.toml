@@ -1,6 +1,6 @@
 [package]
 name = "dt-cli-tools"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 description = "CLI tools for viewing, filtering, and comparing tabular data files"
 license = "MIT"
@@ -25,6 +25,15 @@ path = "src/bin/dtfilter.rs"
 name = "dtdiff"
 path = "src/bin/dtdiff.rs"
 
+[[bin]]
+name = "dtset"
+path = "src/bin/dtset.rs"
+required-features = ["alpha"]
+
+[features]
+# Experimental write support (dtset). Off by default; release binaries stay read-only.
+alpha = ["dep:umya-spreadsheet", "dep:tempfile"]
+
 [dependencies]
 polars = { version = "0.46", default-features = false, features = [
     "dtype-datetime",
@@ -38,6 +47,8 @@ calamine = "0.26"
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
 serde_json = { version = "1", features = ["preserve_order"] }
+umya-spreadsheet = { version = "2", optional = true }
+tempfile = { version = "3", optional = true }
 
 [profile.release]
 strip = true
@@ -50,6 +61,7 @@ opt-level = "z"
 assert_cmd = "2"
 predicates = "3"
 tempfile = "3"
+rust_xlsxwriter = "0.82"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [[bench]]
