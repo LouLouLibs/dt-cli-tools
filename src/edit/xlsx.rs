@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 
 use crate::edit::cell::{CellAssignment, CellValue};
 
@@ -21,7 +21,9 @@ pub fn check_editable(path: &Path) -> Result<(), String> {
             "'{}' has no file extension — dtset edits .xlsx/.xlsm only",
             path.display()
         )),
-        other => Err(format!("unsupported format '.{other}' — dtset edits .xlsx/.xlsm only")),
+        other => Err(format!(
+            "unsupported format '.{other}' — dtset edits .xlsx/.xlsm only"
+        )),
     }
 }
 
@@ -107,9 +109,10 @@ fn resolve_sheet_index(
 
     // Try 0-based index
     if let Ok(idx) = selector.parse::<usize>()
-        && idx < sheet_count {
-            return Ok(idx);
-        }
+        && idx < sheet_count
+    {
+        return Ok(idx);
+    }
 
     // Build error with available names
     let names: Vec<&str> = sheets.iter().map(|ws| ws.get_name()).collect();
@@ -121,10 +124,7 @@ fn resolve_sheet_index(
 }
 
 /// Apply a single cell assignment to a worksheet.
-fn apply_assignment(
-    sheet: &mut umya_spreadsheet::Worksheet,
-    assignment: &CellAssignment,
-) {
+fn apply_assignment(sheet: &mut umya_spreadsheet::Worksheet, assignment: &CellAssignment) {
     let cell = sheet.get_cell_mut(assignment.cell.label.as_str());
 
     match &assignment.value {
@@ -230,11 +230,22 @@ mod tests {
 
     #[test]
     fn check_editable_rejects_others() {
-        for p in ["foo.csv", "foo.parquet", "foo.xls", "foo.ods", "foo.xlsb", "foo"] {
+        for p in [
+            "foo.csv",
+            "foo.parquet",
+            "foo.xls",
+            "foo.ods",
+            "foo.xlsb",
+            "foo",
+        ] {
             let err = check_editable(Path::new(p)).unwrap_err();
             assert!(err.contains(".xlsx/.xlsm"), "{p}: {err}");
         }
-        assert!(check_editable(Path::new("foo.xls")).unwrap_err().contains("convert"));
+        assert!(
+            check_editable(Path::new("foo.xls"))
+                .unwrap_err()
+                .contains("convert")
+        );
     }
 
     #[test]
@@ -299,7 +310,10 @@ mod tests {
 
         let a = parse_assignment("A1=1").unwrap();
         let err = write_cells(&path, &path, Some("Nope"), &[a]).unwrap_err();
-        assert!(err.to_string().contains("Revenue, Expenses, Summary"), "{err}");
+        assert!(
+            err.to_string().contains("Revenue, Expenses, Summary"),
+            "{err}"
+        );
     }
 
     #[test]
@@ -329,8 +343,8 @@ mod tests {
     #[test]
     fn test_is_leap_year() {
         assert!(!is_leap_year(1900)); // not a real leap year
-        assert!(is_leap_year(2000));  // divisible by 400
-        assert!(is_leap_year(2024));  // divisible by 4, not by 100
+        assert!(is_leap_year(2000)); // divisible by 400
+        assert!(is_leap_year(2024)); // divisible by 4, not by 100
         assert!(!is_leap_year(1999)); // odd year
     }
 }

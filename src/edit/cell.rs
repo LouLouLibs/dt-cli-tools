@@ -57,7 +57,10 @@ fn col_to_letters(mut col: u32) -> String {
 /// Returns `(0-based column index, remaining string slice)` or an error.
 fn parse_col_part(s: &str) -> Result<(u32, &str), String> {
     let upper = s.to_ascii_uppercase();
-    let alpha_len = upper.chars().take_while(|c| c.is_ascii_alphabetic()).count();
+    let alpha_len = upper
+        .chars()
+        .take_while(|c| c.is_ascii_alphabetic())
+        .count();
     if alpha_len == 0 {
         return Err(format!("no column letters found in '{}'", s));
     }
@@ -141,9 +144,10 @@ pub fn infer_value(s: &str) -> CellValue {
 
     // Integer (must not contain a '.' to avoid "1.0" being parsed as integer)
     if !s.contains('.')
-        && let Ok(i) = s.parse::<i64>() {
-            return CellValue::Integer(i);
-        }
+        && let Ok(i) = s.parse::<i64>()
+    {
+        return CellValue::Integer(i);
+    }
 
     // Float
     if let Ok(f) = s.parse::<f64>() {
@@ -190,9 +194,10 @@ fn coerce_value(raw: &str, tag: &str) -> Result<CellValue, String> {
         "num" => {
             // Try integer first, then float
             if !raw.contains('.')
-                && let Ok(i) = raw.parse::<i64>() {
-                    return Ok(CellValue::Integer(i));
-                }
+                && let Ok(i) = raw.parse::<i64>()
+            {
+                return Ok(CellValue::Integer(i));
+            }
             raw.parse::<f64>()
                 .map(CellValue::Float)
                 .map_err(|_| format!("cannot coerce '{}' to num", raw))
@@ -349,7 +354,11 @@ mod tests {
     fn test_infer_date() {
         assert_eq!(
             infer_value("2024-03-15"),
-            CellValue::Date { year: 2024, month: 3, day: 15 }
+            CellValue::Date {
+                year: 2024,
+                month: 3,
+                day: 15
+            }
         );
     }
 
@@ -428,7 +437,14 @@ mod tests {
     #[test]
     fn test_assignment_date_tag() {
         let a = parse_assignment("A1:date=2025-01-01").unwrap();
-        assert_eq!(a.value, CellValue::Date { year: 2025, month: 1, day: 1 });
+        assert_eq!(
+            a.value,
+            CellValue::Date {
+                year: 2025,
+                month: 1,
+                day: 1
+            }
+        );
     }
 
     // ── Display ───────────────────────────────────────────────────────────────

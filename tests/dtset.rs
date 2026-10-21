@@ -238,9 +238,11 @@ fn test_error_xls_not_supported() {
         .arg("A1=42")
         .assert()
         .code(2)
-        .stderr(predicate::str::contains("only supports .xlsx").or(predicate::str::contains(
-            "legacy .xls format is not supported",
-        )));
+        .stderr(
+            predicate::str::contains("only supports .xlsx").or(predicate::str::contains(
+                "legacy .xls format is not supported",
+            )),
+        );
 }
 
 // ---------------------------------------------------------------------------
@@ -288,7 +290,11 @@ fn value_with_equals_sign() {
     let path = dir.path().join("test.xlsx");
     common::xlsx::create_simple(&path);
 
-    dtset().arg(path.to_str().unwrap()).arg("A2=a=b").assert().success();
+    dtset()
+        .arg(path.to_str().unwrap())
+        .arg("A2=a=b")
+        .assert()
+        .success();
 
     dtcat()
         .arg(path.to_str().unwrap())

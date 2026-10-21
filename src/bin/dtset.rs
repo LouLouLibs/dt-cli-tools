@@ -1,4 +1,4 @@
-use dtcore::edit::cell::{parse_assignment, parse_cell_ref, CellAssignment};
+use dtcore::edit::cell::{CellAssignment, parse_assignment, parse_cell_ref};
 use dtcore::edit::xlsx::{check_editable, write_cells};
 
 use anyhow::Result;
@@ -108,15 +108,17 @@ fn read_csv_assignments(source: &str) -> Result<Vec<CellAssignment>> {
         let _ = skip_first; // already consumed above
 
         let _cell = parse_cell_ref(cell_str).map_err(|e| {
-            ArgError(format!("--from line {}: invalid cell reference: {}", line_num, e))
+            ArgError(format!(
+                "--from line {}: invalid cell reference: {}",
+                line_num, e
+            ))
         })?;
 
         // Build a synthetic assignment string and parse value via infer logic.
         // Since we already have cell and raw value separately, construct CellAssignment directly.
         let assignment_str = format!("{}={}", cell_str, value_str);
-        let assignment = parse_assignment(&assignment_str).map_err(|e| {
-            ArgError(format!("--from line {}: {}", line_num, e))
-        })?;
+        let assignment = parse_assignment(&assignment_str)
+            .map_err(|e| ArgError(format!("--from line {}: {}", line_num, e)))?;
 
         assignments.push(assignment);
     }
@@ -165,10 +167,7 @@ fn unquote_csv(s: &str) -> String {
 fn run(cli: &Cli) -> Result<()> {
     // 1. Validate input file exists
     if !cli.file.exists() {
-        return Err(anyhow::anyhow!(
-            "file not found: '{}'",
-            cli.file.display()
-        ));
+        return Err(anyhow::anyhow!("file not found: '{}'", cli.file.display()));
     }
 
     // 2. Only .xlsx/.xlsm can be edited in place
@@ -203,7 +202,8 @@ fn run(cli: &Cli) -> Result<()> {
     let output_path = cli.output.clone().unwrap_or_else(|| cli.file.clone());
 
     // 7. Call writer
-    let (count, sheet_name) = write_cells(&cli.file, &output_path, cli.sheet.as_deref(), &assignments)?;
+    let (count, sheet_name) =
+        write_cells(&cli.file, &output_path, cli.sheet.as_deref(), &assignments)?;
 
     // 8. Print confirmation to stderr
     let file_name = output_path
@@ -211,7 +211,10 @@ fn run(cli: &Cli) -> Result<()> {
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| output_path.display().to_string());
 
-    eprintln!("dtset: updated {} cells in {} ({})", count, sheet_name, file_name);
+    eprintln!(
+        "dtset: updated {} cells in {} ({})",
+        count, sheet_name, file_name
+    );
 
     Ok(())
 }

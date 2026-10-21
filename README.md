@@ -29,7 +29,7 @@ dtfilter data.csv --filter "Amount>1000" --sort "Amount:desc"
 dtdiff old.csv new.csv --key ID
 ```
 
-> **Supersedes [xl-cli-tools](https://github.com/LouLouLibs/xl-cli-tools)** — same filtering and diff capabilities, now for all tabular formats.
+> **Supersedes [xl-cli-tools](https://github.com/LouLouLibs/xl-cli-tools)** — same filtering and diff capabilities, now for all tabular formats. `xlset` lives on as [`dtset`](#dtset--edit-excel-cells-alpha), an opt-in alpha build.
 
 ## Supported Formats
 
@@ -262,6 +262,55 @@ Added: 1 | Removed: 1 | Modified: 2
 | 1 | Differences found |
 | 2 | Error |
 
+## dtset — Edit Excel Cells (alpha)
+
+Writes values into cells of an existing `.xlsx`/`.xlsm` workbook, preserving formatting, formulas, and everything it doesn't touch. Saves are atomic (temp file + rename), so a failed write never clobbers the original.
+
+**Alpha:** `dtset` is not part of the release binaries and is not built by default. Install it with the `alpha` feature:
+
+```bash
+cargo install --path . --features alpha
+```
+
+Only `.xlsx` and `.xlsm` are supported — other formats (CSV, Parquet, `.xls`, `.ods`, ...) are rejected with exit code 2.
+
+```bash
+# Set a single cell
+dtset file.xlsx A1=42
+
+# Set multiple cells
+dtset file.xlsx A1=42 B2="hello world" C3=true
+
+# Force type with tag (e.g., preserve leading zero)
+dtset file.xlsx A1:str=07401
+
+# Target a specific sheet
+dtset file.xlsx --sheet Revenue A1=42
+
+# Write to a new file (don't modify original)
+dtset file.xlsx -o new.xlsx A1=42
+
+# Bulk update from CSV, or from stdin
+dtset file.xlsx --from updates.csv
+echo "A1,42" | dtset file.xlsx --from -
+```
+
+### Type inference
+
+`42` → integer, `3.5` → float, `true`/`false` → boolean, `2024-01-15` → date, anything else → string. Override with a tag: `:str`, `:num`, `:bool`, `:date`.
+
+### `--from` CSV format
+
+```csv
+cell,value
+A1,42
+B2,hello
+C3:str,07401
+D4,"hello, world"
+```
+
+The header row is optional (skipped when its first field isn't a cell reference). Values use RFC 4180 quoting.
+
 ## Claude Code integration
 
 Claude Code skills are available in [claude-skills](https://github.com/LouLouLibs/claude-skills). Claude can view data files, analyze schemas, filter rows, and compare files in conversations.
@@ -273,6 +322,7 @@ Claude Code skills are available in [claude-skills](https://github.com/LouLouLib
 | dtcat | success | runtime error | invalid arguments |
 | dtfilter | success | runtime error | invalid arguments |
 | dtdiff | no differences | differences found | error |
+| dtset (alpha) | success | runtime error | invalid arguments |
 
 ## License
 
